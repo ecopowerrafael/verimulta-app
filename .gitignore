@@ -1,0 +1,18 @@
+# Segredos — nunca versionar
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+credenciais*
+secrets*
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Temporários
+*.tmp
+*.bak
+~$*
