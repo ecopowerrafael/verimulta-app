@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#071E42">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Verimulta — Verifique antes de pagar</title>
+<link rel="icon" type="image/png" href="icones/favicon.png">
+<link rel="apple-touch-icon" href="icones/icone-192.png">
+<link rel="manifest" href="manifest.json">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap');
+:root{
+  --ink:#0E1319; --papel:#F2F4F1; --branco:#fff;
+  --placa:#0B3C7E; --placa2:#0E4C9E; --noite:#071E42;
+  --sinal:#FFC933; --sinal2:#FFB300;
+  --ok:#0E8A5F; --ok2:#39B489; --vicio:#D6453A;
+  --cinza:#61707F; --linha:#E4E8E1;
+  --r:20px; --r2:14px;
+  --sombra:0 10px 30px rgba(7,30,66,.10);
+  --sombra2:0 18px 44px rgba(7,30,66,.16);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,sans-serif;background:#CDD3CB;display:flex;justify-content:center;color:var(--ink)}
+.fone{width:100%;max-width:430px;height:100dvh;background:var(--papel);position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 80px rgba(0,0,0,.3)}
+h1,h2,h3,.display{font-family:'Sora',sans-serif;letter-spacing:-.015em}
+.mono{font-family:'IBM Plex Mono',monospace}
+
+/* telas + transição */
+.tela{position:absolute;inset:0;background:var(--papel);display:none;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;padding-bottom:100px}
+.tela.ativa{display:flex;animation:telaIn .32s cubic-bezier(.2,.7,.3,1)}
+.tela>*{flex-shrink:0}
+@keyframes telaIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.tela.sem-nav{padding-bottom:0}
+@media (prefers-reduced-motion:reduce){.tela.ativa{animation:none}}
+
+/* cabeçalhos */
+.cab{background:linear-gradient(135deg,var(--noite) 0%,var(--placa) 60%,var(--placa2) 100%);color:#fff;padding:20px 20px 18px;display:flex;align-items:center;gap:13px;position:sticky;top:0;z-index:6}
+.cab .volta{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);color:#fff;width:38px;height:38px;border-radius:12px;font-size:17px;cursor:pointer;flex:none}
+.cab h1{font-size:17px;font-weight:800}
+.cab .sub{font-size:11.5px;color:#9FB6DA;font-weight:500}
+.miolo{padding:18px;display:flex;flex-direction:column;gap:14px}
+
+/* componentes */
+.cartao{background:var(--branco);border:1px solid var(--linha);border-radius:var(--r);padding:18px;box-shadow:var(--sombra)}
+.cartao h3{font-size:15px;font-weight:800;margin-bottom:4px}
+.cz{font-size:12.5px;color:var(--cinza);line-height:1.55}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:linear-gradient(135deg,var(--placa),var(--placa2));color:#fff;border:none;border-radius:14px;padding:16px;font-size:15px;font-weight:800;font-family:'Sora';cursor:pointer;box-shadow:0 8px 22px rgba(11,60,126,.32);transition:transform .12s}
+.btn:active{transform:scale(.98)}
+.btn.sec{background:var(--branco);color:var(--placa);border:2px solid var(--placa);box-shadow:none}
+.btn.amarelo{background:linear-gradient(135deg,var(--sinal),var(--sinal2));color:var(--ink);box-shadow:0 8px 22px rgba(255,179,0,.35)}
+.btn.mini{padding:11px;font-size:13px;border-radius:12px}
+.btn.fantasma{background:none;box-shadow:none;color:var(--cinza);font-weight:700}
+input,select{width:100%;padding:15px;border:1.5px solid var(--linha);border-radius:13px;font-size:15px;background:var(--branco);font-family:'Inter';transition:border .15s}
+input:focus,select:focus{outline:none;border-color:var(--placa)}
+label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A4552;letter-spacing:.02em}
+.aviso{background:linear-gradient(135deg,#FFF8E1,#FFF3CC);border:1px solid #F0DFA0;border-radius:var(--r2);padding:13px 15px;font-size:12px;color:#705D0E;line-height:1.55}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.07em;padding:5px 11px;border-radius:99px}
+.pill.ok{background:#E0F3EA;color:var(--ok)}
+.pill.alerta{background:#FCEAE8;color:var(--vicio)}
+.pill.neutro{background:#E7EEF8;color:var(--placa)}
+.pill.pro{background:linear-gradient(135deg,var(--sinal),var(--sinal2));color:var(--ink)}
+.linha-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid var(--linha);font-size:13.5px}
+.linha-item:last-child{border-bottom:none;padding-bottom:2px}
+.linha-item .l{color:var(--cinza)}
+.linha-item .r{font-weight:700;text-align:right}
+.trava{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;color:#8A6A00;background:#FFF1C7;border:1px solid #F0DFA0;padding:4px 10px;border-radius:99px}
+
+/* nav flutuante */
+.navbar{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border:1px solid var(--linha);border-radius:22px;display:flex;z-index:10;box-shadow:var(--sombra2);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+.navbar button{flex:1;background:none;border:none;padding:7px 2px 5px;font-size:9.5px;font-weight:800;color:#93A0AD;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:'Inter'}
+.navbar button.on{color:var(--placa)}
+.navbar .ic{font-size:19px;line-height:1}
+.navbar .centro{margin-top:-28px}
+.navbar .centro .ic{width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--sinal),var(--sinal2));display:flex;align-items:center;justify-content:center;font-size:25px;box-shadow:0 10px 24px rgba(255,179,0,.5);border:4px solid var(--papel)}
+
+/* login */
+#t-login{background:radial-gradient(120% 90% at 85% -10%,#1A5CB8 0%,transparent 55%),linear-gradient(165deg,var(--noite) 0%,#0A3068 55%,var(--placa) 100%);color:#fff;justify-content:center;padding:34px 26px}
+#t-login::before{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cpath d='M10 60l25 25L110 10' stroke='%23ffffff' stroke-opacity='.035' stroke-width='14' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");pointer-events:none}
+#t-login>*{position:relative}
+#t-login .logo{display:flex;align-items:center;gap:13px;margin-bottom:6px}
+#t-login .check{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--sinal),var(--sinal2));display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(255,179,0,.45)}
+#t-login .check svg{width:32px;height:32px}
+#t-login .nome{font-family:'Sora';font-size:33px;font-weight:800;letter-spacing:-.02em}
+#t-login .slogan{color:#A9C3E8;font-size:15px;margin-bottom:30px;font-weight:500}
+#t-login label{color:#A9C3E8}
+#t-login .cx{background:rgba(255,255,255,.07);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:11px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+#t-login input{background:rgba(255,255,255,.97);border:none}
+.bio{display:flex;align-items:center;justify-content:center;gap:9px;color:#A9C3E8;font-size:13px;font-weight:700;margin-top:4px;background:none;border:1.5px dashed rgba(255,255,255,.3);border-radius:13px;padding:13px;width:100%;cursor:pointer;font-family:'Inter'}
+.link-claro{color:var(--sinal);font-size:14px;font-weight:800;text-align:center;margin-top:18px;background:none;border:none;cursor:pointer;width:100%;font-family:'Sora'}
+.selos-login{display:flex;justify-content:center;gap:14px;margin-top:22px;font-size:10.5px;color:#7E9BC7;font-weight:600}
+
+/* home */
+.home-cab{background:radial-gradient(110% 80% at 90% -20%,#1A5CB8 0%,transparent 60%),linear-gradient(150deg,var(--noite),var(--placa) 75%);color:#fff;padding:24px 20px 62px;border-radius:0 0 32px 32px;position:relative;overflow:hidden}
+.home-cab::after{content:"";position:absolute;right:-30px;top:-30px;width:170px;height:170px;border-radius:50%;background:rgba(255,201,51,.08)}
+.home-topo{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
+.home-cab .oi{font-size:12.5px;color:#9FB6DA;font-weight:600}
+.home-cab .nome{font-family:'Sora';font-size:22px;font-weight:800}
+.avatar{width:46px;height:46px;border-radius:16px;background:linear-gradient(135deg,var(--sinal),var(--sinal2));color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;overflow:hidden;font-family:'Sora';cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.plano-badge{margin-top:11px;position:relative;z-index:1}
+.saude{margin:-44px 18px 0;background:rgba(255,255,255,.95);border:1px solid var(--linha);border-radius:var(--r);padding:18px 10px;display:flex;box-shadow:var(--sombra2);position:relative;z-index:2}
+.saude .col{flex:1;text-align:center;position:relative}
+.saude .col+.col::before{content:"";position:absolute;left:0;top:15%;bottom:15%;width:1px;background:var(--linha)}
+.saude .v{font-family:'Sora';font-size:21px;font-weight:800;color:var(--placa)}
+.saude .k{font-size:9.5px;color:var(--cinza);font-weight:800;letter-spacing:.08em;margin-top:2px}
+.atalhos{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.atalho{background:var(--branco);border:1px solid var(--linha);border-radius:16px;padding:13px 4px;text-align:center;font-size:10px;font-weight:800;color:var(--ink);cursor:pointer;box-shadow:var(--sombra);transition:transform .12s}
+.atalho:active{transform:scale(.95)}
+.atalho .ic{width:38px;height:38px;margin:0 auto 7px;border-radius:12px;background:linear-gradient(135deg,#EAF0F9,#DDE8F6);display:flex;align-items:center;justify-content:center;font-size:19px}
+
+/* scanner */
+.cam{background:linear-gradient(160deg,#0A0F16,#101B29);border-radius:22px;aspect-ratio:3/4;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#7C8B9B;font-size:13px;text-align:center;padding:24px;box-shadow:var(--sombra2)}
+.cam .mira{position:absolute;inset:28px;border-radius:16px}
+.cam .mira i{position:absolute;width:30px;height:30px;border:3px solid var(--sinal)}
+.cam .mira i:nth-child(1){top:0;left:0;border-right:none;border-bottom:none;border-radius:10px 0 0 0}
+.cam .mira i:nth-child(2){top:0;right:0;border-left:none;border-bottom:none;border-radius:0 10px 0 0}
+.cam .mira i:nth-child(3){bottom:0;left:0;border-right:none;border-top:none;border-radius:0 0 0 10px}
+.cam .mira i:nth-child(4){bottom:0;right:0;border-left:none;border-top:none;border-radius:0 0 10px 0}
+.cam .varre{position:absolute;left:30px;right:30px;height:3px;background:linear-gradient(90deg,transparent,var(--sinal),transparent);animation:varre 2.4s ease-in-out infinite}
+@keyframes varre{0%,100%{top:38px}50%{top:calc(100% - 44px)}}
+.checkline{display:flex;align-items:center;gap:11px;font-size:13px;border-left:3px solid var(--linha);padding:10px 12px;background:var(--branco);border-radius:0 12px 12px 0;box-shadow:var(--sombra)}
+.checkline .ic{width:21px;height:21px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800}
+.checkline.ok{border-left-color:var(--ok)}.checkline.ok .ic{background:linear-gradient(135deg,var(--ok),var(--ok2))}
+.checkline.vicio{border-left-color:var(--vicio);background:#FDF3F2}.checkline.vicio .ic{background:var(--vicio)}
+.checkline .cod{font-family:'IBM Plex Mono';font-size:10.5px;color:var(--cinza);font-weight:600;flex:none}
+.probwrap .lbl{display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;font-weight:800;letter-spacing:.07em;color:var(--cinza)}
+.probwrap .lbl b{font-family:'Sora';font-size:24px;color:var(--ink)}
+.barra{height:12px;background:var(--linha);border-radius:99px;margin-top:9px;overflow:hidden}
+.barra i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--ok2));border-radius:99px;transition:width 1.1s cubic-bezier(.2,.7,.3,1)}
+.borrado{filter:blur(7px);user-select:none;pointer-events:none}
+.trava-caixa{position:relative}
+.trava-cima{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:2;text-align:center;padding:10px}
+.trava-cima .cadeado{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--sinal),var(--sinal2));display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 8px 20px rgba(255,179,0,.45)}
+
+/* timeline */
+.tl{list-style:none;position:relative;padding-left:28px}
+.tl::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--linha)}
+.tl li{position:relative;padding:0 0 18px}
+.tl li::before{content:"";position:absolute;left:-25px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;border:3px solid var(--linha)}
+.tl li.feito::before{background:var(--ok);border-color:var(--ok)}
+.tl li.agora::before{background:var(--sinal);border-color:var(--sinal);box-shadow:0 0 0 5px rgba(255,201,51,.25)}
+.tl .t{font-size:13.5px;font-weight:800}
+.tl .d{font-size:11.5px;color:var(--cinza)}
+
+/* rede / planos */
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.cat{background:var(--branco);border:1px solid var(--linha);border-radius:18px;padding:16px;text-align:center;cursor:pointer;box-shadow:var(--sombra)}
+.cat .ic{font-size:26px}
+.cat .n{font-size:12.5px;font-weight:800;margin-top:7px;font-family:'Sora'}
+.cat .p{font-size:10.5px;color:var(--cinza);margin-top:2px}
+.prest{display:flex;gap:12px;align-items:center;background:var(--branco);border:1px solid var(--linha);border-radius:18px;padding:14px;box-shadow:var(--sombra)}
+.prest .foto{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#EAF0F9,#DDE8F6);display:flex;align-items:center;justify-content:center;font-size:21px;flex:none}
+.prest .n{font-size:13.5px;font-weight:800}
+.prest .d{font-size:11px;color:var(--cinza)}
+.selo{font-size:9px;font-weight:800;color:var(--ok);background:#E0F3EA;padding:3px 9px;border-radius:99px;display:inline-block;margin-top:4px;letter-spacing:.03em}
+.plano-c{background:var(--branco);border:1px solid var(--linha);border-radius:var(--r);padding:18px;position:relative;box-shadow:var(--sombra)}
+.plano-c.dest{border:2px solid var(--placa);box-shadow:var(--sombra2)}
+.plano-c .fita{position:absolute;top:-11px;left:16px;background:linear-gradient(135deg,var(--sinal),var(--sinal2));font-size:9.5px;font-weight:800;padding:4px 11px;border-radius:99px;letter-spacing:.05em}
+.plano-c .nm{font-family:'Sora';font-weight:800;font-size:15.5px}
+.plano-c .qm{font-size:11px;color:var(--cinza);margin-top:1px}
+.plano-c .pr{font-family:'Sora';font-size:24px;font-weight:800;margin:8px 0}
+.plano-c .pr small{font-size:11px;color:var(--cinza);font-weight:600;font-family:'Inter'}
+
+/* paywall */
+.veu{position:absolute;inset:0;background:rgba(7,19,35,.55);z-index:40;display:none}
+.veu.mostra{display:block;animation:veuIn .25s}
+@keyframes veuIn{from{opacity:0}to{opacity:1}}
+.folha{position:absolute;left:0;right:0;bottom:0;background:var(--papel);border-radius:28px 28px 0 0;z-index:50;padding:14px 22px calc(26px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .34s cubic-bezier(.2,.8,.25,1);box-shadow:0 -20px 60px rgba(0,0,0,.35)}
+.folha.mostra{transform:none}
+.folha .puxador{width:44px;height:5px;border-radius:99px;background:#C9D1C8;margin:0 auto 16px}
+.folha h2{font-size:21px;font-weight:800;margin-bottom:6px}
+.folha .beneficios{list-style:none;margin:14px 0 18px;display:flex;flex-direction:column;gap:9px}
+.folha .beneficios li{display:flex;gap:10px;font-size:13.5px;font-weight:600;align-items:center}
+.folha .beneficios .ck{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--ok),var(--ok2));color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none}
+
+.toast{position:absolute;left:50%;bottom:110px;transform:translateX(-50%) translateY(60px);background:var(--ink);color:#fff;padding:13px 19px;border-radius:14px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:70;width:max-content;max-width:88%;text-align:center;box-shadow:var(--sombra2);pointer-events:none}
+.toast.mostra{opacity:1;transform:translateX(-50%)}
+.rodape-legal{font-size:10.5px;color:var(--cinza);text-align:center;padding:6px 14px;line-height:1.55}
+</style>
+</head>
+<body>
+<div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#FFC933;color:#12171D;font:700 10.5px Arial;text-align:center;padding:4px;letter-spacing:.06em">MODO DEMONSTRAÇÃO · abra pelo servidor para dados reais</div>
+<div class="fone">
+
+<!-- LOGIN -->
+<section class="tela sem-nav ativa" id="t-login">
+  <div class="logo">
+    <span class="check"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5L9.5 18L20 6.5" stroke="#0B3C7E" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span class="nome">Verimulta</span>
+  </div>
+  <div class="slogan">Verifique antes de pagar.</div>
+  <div class="cx">
+    <div><label>E-mail ou CPF</label><input id="lg-user" placeholder="voce@email.com"></div>
+    <div><label>Senha</label><input id="lg-senha" type="password" placeholder="••••••••"></div>
+    <button class="btn amarelo" onclick="fazerLogin()">Entrar</button>
+    <button class="bio" onclick="biometria()">🙂 &nbsp;Entrar com biometria facial</button>
+  </div>
+  <button class="link-claro" onclick="go('t-cadastro')">Criar minha conta grátis →</button>
+  <div class="selos-login"><span>🔒 Dados protegidos (LGPD)</span><span>✓ Sem cartão para começar</span></div>
+</section>
+
+<!-- CADASTRO -->
+<section class="tela sem-nav" id="t-cadastro">
+  <div class="cab"><button class="volta" onclick="go('t-login')">←</button><div><h1>Criar conta grátis</h1><div class="sub">Sem cartão · veja suas multas em 1 minuto</div></div></div>
+  <div class="miolo">
+    <div class="cartao" style="display:flex;flex-direction:column;gap:11px">
+      <div><label>Nome completo</label><input id="cd-nome" placeholder="Seu nome"></div>
+      <div><label>CPF</label><input id="cd-cpf" placeholder="000.000.000-00" inputmode="numeric"></div>
+      <div><label>E-mail</label><input id="cd-email" type="email" placeholder="voce@email.com"></div>
+      <div><label>Senha</label><input id="cd-senha" type="password" placeholder="Crie uma senha"></div>
+      <div><label>Placa do seu veículo</label><input id="cd-placa" placeholder="ABC1D23" style="text-transform:uppercase"></div>
+      <div><label>Foto de perfil (opcional)</label><input id="cd-foto" type="file" accept="image/*"></div>
+    </div>
+    <div class="aviso">Ao continuar, você concorda com os <a href="termos.html" target="_blank" style="color:#705D0E;text-decoration:underline">Termos de Uso</a> e autoriza o tratamento dos seus dados conforme a LGPD, para consultarmos as multas vinculadas ao seu CPF e placa. Biometria é opcional.</div>
+    <button class="btn" onclick="fazerCadastro()">Criar conta e ver minhas multas</button>
+  </div>
+</section>
+
+<!-- HOME -->
+<section class="tela" id="t-home">
+  <div class="home-cab">
+    <div class="home-topo">
+      <div><div class="oi">Bem-vindo(a) ao Verimulta</div><div class="nome" id="homeNome">Motorista</div></div>
+      <div class="avatar" id="homeAvatar" onclick="go('t-perfil')">M</div>
+    </div>
+    <div class="plano-badge" id="homeBadge"></div>
+  </div>
+  <div class="saude">
+    <div class="col"><div class="v">4</div><div class="k">PONTOS CNH</div></div>
+    <div class="col"><div class="v" style="color:var(--vicio)" id="hMultas">–</div><div class="k">MULTAS NO CPF</div></div>
+    <div class="col"><div class="v" id="hPrazo">–</div><div class="k">PRÓX. PRAZO</div></div>
+  </div>
+  <div class="miolo">
+    <p class="cz" style="text-align:center;margin:2px 0 4px">🛰️ Placa, Renavam e CNH monitorados 24h — você despreocupado, a gente verifica.</p>
+    <div id="cardMulta"></div>
+    <div class="atalhos">
+      <div class="atalho" onclick="go('t-veiculo')"><span class="ic">🚗</span>Veículo</div>
+      <div class="atalho" onclick="go('t-cnh')"><span class="ic">🪪</span>CNH</div>
+      <div class="atalho" onclick="go('t-debitos')"><span class="ic">💳</span>Débitos</div>
+      <div class="atalho" onclick="go('t-divida')"><span class="ic">🏛️</span>Dív. Ativa</div>
+      <div class="atalho" onclick="go('t-frota')"><span class="ic">🚛</span>Frota</div>
+      <div class="atalho" onclick="go('t-rede')"><span class="ic">🤝</span>Rede</div>
+      <div class="atalho" onclick="go('t-consultas')"><span class="ic">🔎</span>Consultas</div>
+      <div class="atalho" onclick="go('t-planos')"><span class="ic">⭐</span>Planos</div>
+    </div>
+    <div class="cartao" id="cardAssine">
+      <div style="display:flex;gap:13px;align-items:center">
+        <div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--sinal),var(--sinal2));display:flex;align-items:center;justify-content:center;font-size:22px;flex:none">⚡</div>
+        <div style="flex:1"><h3>Desbloqueie as funções</h3><div class="cz">Auditoria completa, probabilidade, defesas ilimitadas e alertas.</div></div>
+      </div>
+      <button class="btn mini" style="margin-top:13px" onclick="go('t-planos')">Assinar a partir de R$ 29,90/mês</button>
+    </div>
+    <div class="cartao">
+      <h3>Panorama do veículo</h3>
+      <div class="linha-item"><span class="l">Licenciamento 2026</span><span class="r" style="color:var(--ok)">Pago</span></div>
+      <div class="linha-item"><span class="l">IPVA 2026</span><span class="r" style="color:var(--ok)">Quitado</span></div>
+      <div class="linha-item"><span class="l">Recall pendente</span><span class="r">Nenhum</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- SCAN -->
+<section class="tela" id="t-scan">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Verificar multa</h1><div class="sub">Fotografe a notificação de autuação</div></div></div>
+  <div class="miolo">
+    <div class="cam"><div class="mira"><i></i><i></i><i></i><i></i></div><div class="varre"></div><span>Enquadre a Notificação de Autuação<br>ou envie uma foto da galeria</span></div>
+    <input type="file" accept="image/*" id="scanFile" style="display:none" onchange="analisar()">
+    <button class="btn amarelo" onclick="document.getElementById('scanFile').click()">📸 &nbsp;Fotografar ou enviar</button>
+    <button class="btn sec" onclick="analisar()">Verificar a multa encontrada no meu CPF</button>
+  </div>
+</section>
+
+<!-- ANALISANDO -->
+<section class="tela sem-nav" id="t-analise">
+  <div class="miolo" style="justify-content:center;flex:1;text-align:center;gap:18px">
+    <div style="font-size:52px" id="anIcone">🔍</div>
+    <h3 style="font-size:19px;font-weight:800" id="anTexto">Lendo o documento…</h3>
+    <div class="barra" style="max-width:250px;margin:0 auto"><i id="anBarra" style="width:8%"></i></div>
+    <div class="cz" id="anPasso">OCR extraindo os campos</div>
+  </div>
+</section>
+
+<!-- DIAGNÓSTICO -->
+<section class="tela" id="t-diag">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Diagnóstico da multa</h1><div class="sub" id="diagSub">—</div></div></div>
+  <div class="miolo">
+    <div class="cartao" id="diagInfo"></div>
+    <div class="cartao" style="display:flex;flex-direction:column;gap:9px">
+      <h3>Auditoria — 14 verificações</h3>
+      <div id="listaChecks" style="display:flex;flex-direction:column;gap:9px"></div>
+    </div>
+    <div class="cartao probwrap trava-caixa">
+      <div id="probConteudo" class="borrado">
+        <div class="lbl"><span>PROBABILIDADE ESTIMADA</span><b id="probVal">••%</b></div>
+        <div class="barra"><i id="probBarra" style="width:55%"></i></div>
+        <p class="cz" style="margin-top:10px">Estimativa com base nas verificações — nunca garantia. A decisão é do órgão julgador.</p>
+      </div>
+      <div class="trava-cima" id="probTrava">
+        <div class="cadeado">🔒</div>
+        <b style="font-family:'Sora';font-size:14px">Assine para ver a probabilidade</b>
+        <button class="btn mini" style="width:auto;padding:10px 20px" onclick="abrirPaywall('probabilidade')">Desbloquear agora</button>
+      </div>
+    </div>
+    <button class="btn" onclick="tentarDefesa()">📄 &nbsp;Gerar minha Defesa Prévia&nbsp;<span class="trava" id="travaDefesa">🔒 PRO</span></button>
+    <button class="btn fantasma" onclick="go('t-home')">Guardar e decidir depois</button>
+  </div>
+</section>
+
+<!-- DEFESA -->
+<section class="tela" id="t-defesa">
+  <div class="cab"><button class="volta" onclick="go('t-diag')">←</button><div><h1>Sua Defesa Prévia</h1><div class="sub">Revise antes de protocolar</div></div></div>
+  <div class="miolo">
+    <div class="cartao" id="defCard" style="font-size:12.5px;line-height:1.7;color:#333;white-space:pre-wrap"></div>
+    <button class="btn mini amarelo" onclick="imprimirDefesa()">📄 &nbsp;Emitir em PDF para protocolar</button>
+    <div class="cartao">
+      <h3 style="font-size:14px;margin-bottom:8px">Protocole direto no órgão</h3>
+      <div class="linha-item" onclick="window.open('https://www.detran.sp.gov.br','_blank')" style="cursor:pointer"><span class="l">🏛️ Detran-SP (defesas e recursos)</span><span class="r">→</span></div>
+      <div class="linha-item" onclick="window.open('https://portalservicos.senatran.serpro.gov.br','_blank')" style="cursor:pointer"><span class="l">🇧🇷 SNE / Senatran (multas federais)</span><span class="r">→</span></div>
+      <div class="linha-item" onclick="window.open('https://www.sumare.sp.gov.br','_blank')" style="cursor:pointer"><span class="l">🏙️ Prefeitura autuadora (municipais)</span><span class="r">→</span></div>
+    </div>
+    <div class="aviso">Você revisa, assina e protocola <b>em seu nome</b> — o app mostra onde. O Verimulta organiza os fundamentos; não somos escritório de advocacia.</div>
+    <button class="btn" onclick="protocolar()">Confirmar e acompanhar protocolo</button>
+    <button class="btn sec" onclick="go('t-rede')">Prefiro ajuda de um credenciado →</button>
+  </div>
+</section>
+
+<!-- STATUS -->
+<section class="tela" id="t-status">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Meus recursos</h1><div class="sub">Acompanhamento em tempo real</div></div></div>
+  <div class="miolo">
+    <div class="cartao" id="statusVazio">
+      <h3>Nenhuma defesa em andamento</h3>
+      <div class="cz">Verifique uma multa e gere sua defesa — ela aparecerá aqui com a linha do tempo completa.</div>
+      <button class="btn mini sec" style="margin-top:12px" onclick="go('t-scan')">Verificar uma multa</button>
+    </div>
+    <div class="cartao" id="statusCard" style="display:none">
+      <span class="pill neutro">EM ANDAMENTO</span>
+      <h3 style="margin-top:9px">Defesa Prévia — AIT T00226588</h3>
+      <ul class="tl" style="margin-top:15px">
+        <li class="feito"><div class="t">Defesa gerada</div><div class="d">Fundamento A12 aplicado</div></li>
+        <li class="agora"><div class="t">Aguardando seu protocolo</div><div class="d">Online (site da Prefeitura) ou presencial</div></li>
+        <li><div class="t">Em análise pelo órgão</div><div class="d">Prazo médio: 30–60 dias</div></li>
+        <li><div class="t">Resultado</div><div class="d">Alerta na hora + registro para calibrar estimativas</div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- VEÍCULO -->
+<section class="tela" id="t-veiculo">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Meu veículo</h1><div class="sub" id="vePlaca">SVE3J45</div></div></div>
+  <div class="miolo">
+    <div class="cartao"><h3>VW Nivus HL TSI · 2024</h3>
+      <div class="linha-item"><span class="l">Licenciamento</span><span class="r" style="color:var(--ok)">Em dia</span></div>
+      <div class="linha-item"><span class="l">IPVA 2026</span><span class="r" style="color:var(--ok)">Quitado</span></div>
+      <div class="linha-item"><span class="l">Multas ativas</span><span class="r" style="color:var(--vicio)">1 · R$ 130,16</span></div>
+      <div class="linha-item"><span class="l">Recall</span><span class="r">Nenhum pendente</span></div>
+    </div>
+    <div class="cartao"><h3>Histórico recente</h3>
+      <div class="linha-item"><span class="l">10/07/2026</span><span class="r">Autuação 7366-2 (celular)</span></div>
+      <div class="linha-item"><span class="l">15/01/2026</span><span class="r">Licenciamento renovado</span></div>
+    </div>
+    <button class="btn sec" onclick="go('t-scan')">Verificar a multa deste veículo</button>
+  </div>
+</section>
+
+<!-- CNH -->
+<section class="tela" id="t-cnh">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Minha CNH</h1><div class="sub">Situação e pontuação</div></div></div>
+  <div class="miolo">
+    <div class="cartao" style="text-align:center">
+      <span class="pill ok">CNH REGULAR</span>
+      <div class="display" style="font-size:48px;font-weight:800;margin:12px 0 2px">4 <span style="font-size:15px;color:var(--cinza);font-family:'Inter';font-weight:600">/ 40 pts</span></div>
+      <div class="cz">Últimos 12 meses · limite sem suspensão: 40 pontos</div>
+      <div class="barra" style="margin-top:13px"><i style="width:10%"></i></div>
+    </div>
+    <div class="cartao"><h3>Alertas</h3>
+      <div class="linha-item"><span class="l">Vencimento da CNH</span><span class="r">14/03/2029</span></div>
+      <div class="linha-item"><span class="l">Indicação de condutor</span><span class="r" style="color:var(--vicio)">até 28/09/2026</span></div>
+    </div>
+    <div class="cartao trava-caixa">
+      <div id="cnhBorrado" class="borrado"><h3>Alertas automáticos push + e-mail</h3><div class="cz">Aviso 15, 7, 3 e 1 dia antes de cada prazo. Nunca mais perca uma data.</div></div>
+      <div class="trava-cima" id="cnhTrava"><div class="cadeado">🔒</div><button class="btn mini" style="width:auto;padding:10px 20px" onclick="abrirPaywall('alertas')">Desbloquear alertas</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- DÉBITOS -->
+<section class="tela" id="t-debitos">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Débitos correntes</h1><div class="sub">IPVA · Licenciamento · Multas</div></div></div>
+  <div class="miolo">
+    <div class="cartao">
+      <h3>Multa — AIT T00226588</h3>
+      <div class="linha-item"><span class="l">Valor integral</span><span class="r">R$ 130,16</span></div>
+      <div class="linha-item"><span class="l">Com SNE (−40%)</span><span class="r" style="color:var(--ok)">R$ 78,10</span></div>
+      <div class="cz" style="margin-top:9px">💡 Antes de pagar, veja a probabilidade da defesa — pagar encerra a discussão.</div>
+      <button class="btn mini sec" style="margin-top:12px" onclick="go('t-scan')">Verificar antes de pagar</button>
+    </div>
+    <div class="cartao"><h3>IPVA e licenciamento</h3><div class="cz">Sem parcelas em aberto para <span id="debPlaca">SVE3J45</span>. 🎉</div></div>
+  </div>
+</section>
+
+<!-- DÍVIDA ATIVA -->
+<section class="tela" id="t-divida">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Dívida ativa</h1><div class="sub">Consulta com seu consentimento</div></div></div>
+  <div class="miolo">
+    <div class="cartao" style="display:flex;flex-direction:column;gap:11px">
+      <div><label>Placa</label><input id="da-placa" placeholder="ABC1D23" style="text-transform:uppercase"></div>
+      <div><label>Renavam</label><input id="da-renavam" placeholder="00000000000" inputmode="numeric"></div>
+      <div><label>CPF do proprietário</label><input id="da-cpf" placeholder="000.000.000-00" inputmode="numeric"></div>
+      <button class="btn" onclick="consultarDivida()">Consultar</button>
+    </div>
+    <div class="cartao" id="da-result" style="display:none">
+      <span class="pill ok">NADA INSCRITO</span>
+      <h3 style="margin-top:9px">Nenhum débito em dívida ativa</h3>
+      <div class="cz">Não localizamos IPVA, multas ou taxas inscritas para os dados informados.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FROTA -->
+<section class="tela" id="t-frota">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Painel de frota</h1><div class="sub">Para 10+ veículos · qualquer tipo</div></div></div>
+  <div class="miolo">
+    <div class="cartao trava-caixa">
+      <div id="frotaBorrado" class="borrado">
+        <div style="display:flex;text-align:center;padding:6px 0 12px">
+          <div style="flex:1"><div class="display" style="font-size:20px;font-weight:800;color:var(--placa)">12</div><div class="cz" style="font-size:9.5px;font-weight:800">VEÍCULOS</div></div>
+          <div style="flex:1"><div class="display" style="font-size:20px;font-weight:800;color:var(--vicio)">5</div><div class="cz" style="font-size:9.5px;font-weight:800">MULTAS</div></div>
+          <div style="flex:1"><div class="display" style="font-size:20px;font-weight:800;color:var(--placa)">R$ 1.4k</div><div class="cz" style="font-size:9.5px;font-weight:800">EM RISCO</div></div>
+        </div>
+        <div class="linha-item"><span class="l">🚛 QWE2R34 · radar</span><span class="r" style="color:var(--ok)">est. 81% · recorrer</span></div>
+        <div class="linha-item"><span class="l">🏍️ KLM3N45 · indicação</span><span class="r" style="color:var(--vicio)">prazo 6 dias</span></div>
+        <div class="linha-item"><span class="l">Carlos M.</span><span class="r">14 pts ⚠️</span></div>
+      </div>
+      <div class="trava-cima" id="frotaTrava"><div class="cadeado">🔒</div><b style="font-family:'Sora';font-size:14px">Painel Frota — a partir de R$ 12/veículo</b><button class="btn mini" style="width:auto;padding:10px 20px" onclick="abrirPaywall('frota')">Conhecer o plano Frota</button></div>
+    </div>
+    <div class="cz" style="text-align:center">Motos, caminhões, vans, ônibus e utilitários — todo veículo autuável entra.</div>
+  </div>
+</section>
+
+<!-- REDE -->
+<section class="tela" id="t-rede">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Rede credenciada</h1><div class="sub">Perto de você · Campinas/SP</div></div></div>
+  <div class="miolo">
+    <div class="cat-grid">
+      <div class="cat" onclick="toast('Mostrando: Advogados credenciados')"><div class="ic">⚖️</div><div class="n">Advogados</div><div class="p">Trânsito · CNH</div></div>
+      <div class="cat" onclick="toast('Mostrando: Despachantes credenciados')"><div class="ic">📋</div><div class="n">Despachantes</div><div class="p">Docs · transferência</div></div>
+      <div class="cat" onclick="toast('Mostrando: Motoboys credenciados')"><div class="ic">🏍️</div><div class="n">Motoboy</div><div class="p">Coleta e entrega</div></div>
+      <div class="cat" onclick="toast('Mostrando: Protocolo presencial')"><div class="ic">🏢</div><div class="n">Protocolo</div><div class="p">Detran · JARI · CET</div></div>
+    </div>
+    <div class="prest"><div class="foto">⚖️</div><div style="flex:1"><div class="n">Dra. Mariana L. — Direito de Trânsito</div><div class="d">Campinas · responde em ~2h</div><span class="selo">✓ CREDENCIADA E VERIFICADA · OAB</span></div><button class="btn mini" style="width:auto;padding:10px 14px" onclick="toast('Contato direto com a credenciada (demo).')">Contatar</button></div>
+    <div class="prest"><div class="foto">🏍️</div><div style="flex:1"><div class="n">Rápido Express — Motoboy</div><div class="d">Sumaré · coleta a partir de R$ 25</div><span class="selo">✓ CREDENCIADO E VERIFICADO</span></div><button class="btn mini" style="width:auto;padding:10px 14px" onclick="toast('Solicitação de coleta (demo).')">Solicitar</button></div>
+    <div class="cz" style="font-size:11px">A contratação e os valores são combinados diretamente com o prestador. O Verimulta conecta e garante a credencial — não intermedia o mérito nem promete resultado.</div>
+    <button class="btn amarelo" onclick="go('t-parceiro')">Sou prestador — quero me credenciar</button>
+  </div>
+</section>
+
+<!-- PARCEIRO -->
+<section class="tela" id="t-parceiro">
+  <div class="cab"><button class="volta" onclick="go('t-rede')">←</button><div><h1>Seja um parceiro</h1><div class="sub">Credenciamento anual · 12 meses</div></div></div>
+  <div class="miolo">
+    <div class="cartao" style="display:flex;flex-direction:column;gap:11px">
+      <div><label>Categoria</label>
+        <select id="pc-cat" onchange="precoParceiro()">
+          <option value="99|1069">Advogado — verificação OAB</option>
+          <option value="79|853">Despachante — documentação</option>
+          <option value="59|637">Protocolo presencial — documentação</option>
+          <option value="39|421">Motoboy — CNH + veículo</option>
+        </select>
+      </div>
+      <div class="linha-item"><span class="l">12x no cartão</span><span class="r mono" id="pc-12x">12x R$ 99</span></div>
+      <div class="linha-item"><span class="l">PIX à vista (−10%)</span><span class="r mono" style="color:var(--ok)" id="pc-pix">R$ 1.069</span></div>
+      <div class="cz">Inclui: vitrine da sua região, selo verificado, solicitações de clientes, avaliações e painel de atendimentos.</div>
+      <button class="btn" onclick="toast('Credenciamento iniciado! Verificação de credenciais + pagamento entram na produção.')">Credenciar agora</button>
+    </div>
+  </div>
+</section>
+
+<!-- PLANOS -->
+<section class="tela" id="t-planos">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h2>Planos Verimulta</h2><div class="sub">CNHs + veículos monitorados 24h · cancele em 1 toque</div></div></div>
+  <div class="miolo">
+    <div class="cartao" style="border:2px solid var(--sinal);position:relative">
+      <span class="pill pro" style="position:absolute;top:-11px;right:14px">MAIS ESCOLHIDO</span>
+      <h3>Individual · R$ 29,90/mês</h3>
+      <p class="cz">1 CNH + até 2 veículos do titular · auditoria completa · defesas ilimitadas · alertas 24h</p>
+      <button class="btn mini amarelo" style="margin-top:11px" onclick="assinar('individual','Individual')">Assinar e desbloquear</button>
+    </div>
+    <div class="cartao"><h3>Casal · R$ 49,90/mês</h3>
+      <p class="cz">2 CNHs + 3 veículos · </p>
+      <button class="btn mini" style="margin-top:11px" onclick="assinar('casal','Casal')">Assinar Casal</button></div>
+    <div class="cartao"><h3>Individual Anual · R$ 299/ano</h3>
+      <p class="cz">12 meses pelo preço de 10 · o ano inteiro vigiado</p>
+      <button class="btn mini" style="margin-top:11px" onclick="assinar('anual','Anual')">Assinar Anual</button></div>
+    <div class="cartao" style="background:linear-gradient(150deg,#071E42,#0B3C7E);border:none">
+      <h3 style="color:#fff">Empresa Start · R$ 89,90/mês</h3>
+      <p style="color:#B9C9E0;font-size:12.5px">CNPJ · até 5 veículos + 2 usuários · indicação de condutor no prazo (adeus multa em dobro) · painel de pontos por motorista</p>
+      <button class="btn mini amarelo" style="margin-top:11px" onclick="assinar('empresa_start','Empresa Start')">Assinar Empresa Start</button></div>
+    <div class="cartao" style="background:linear-gradient(150deg,#071E42,#0B3C7E);border:none">
+      <h3 style="color:#fff">Empresa Pro · R$ 149,90/mês</h3>
+      <p style="color:#B9C9E0;font-size:12.5px">Até 15 veículos + 5 usuários · relatórios gerenciais · prioridade no suporte</p>
+      <button class="btn mini" style="margin-top:11px;background:#fff" onclick="assinar('empresa_pro','Empresa Pro')">Assinar Empresa Pro</button></div>
+    <div class="cartao"><h3>Frota 10+ · R$ 11,90/veículo</h3>
+      <p class="cz">Degressivo: 50+ veíc R$ 9,90 · 200+ R$ 7,90 · preço transparente (concorrência esconde) · proposta em 24h</p>
+      <button class="btn mini" style="margin-top:11px" onclick="toast('Fale com a gente: frotas@verimulta.com.br')">Pedir proposta Frota</button></div>
+    <p class="cz" style="text-align:center">Sem fidelidade · arrependimento de 7 dias (CDC) · pagamento seguro</p>
+  </div>
+</section>
+
+<!-- CONSULTAS -->
+<section class="tela" id="t-consultas">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Consultas oficiais</h1><div class="sub">Links diretos do governo</div></div></div>
+  <div class="miolo">
+    <div class="cartao"><h3>CNH & Trânsito</h3>
+      <div class="linha-item"><span class="l">Portal SENATRAN</span><a class="r" href="https://portalservicos.senatran.serpro.gov.br" target="_blank" rel="noopener">abrir ↗</a></div>
+      <div class="linha-item"><span class="l">Consultar CNH (gov.br)</span><a class="r" href="https://www.gov.br/pt-br/servicos/consultar-online-dados-de-sua-habilitacao-de-transito" target="_blank" rel="noopener">abrir ↗</a></div>
+      <div class="linha-item"><span class="l">Carteira Digital de Trânsito</span><a class="r" href="https://www.gov.br/pt-br/servicos/obter-carteira-digital-de-transito" target="_blank" rel="noopener">abrir ↗</a></div>
+    </div>
+    <div class="cartao"><h3>Veículo & IPVA (SP)</h3>
+      <div class="linha-item"><span class="l">Detran-SP</span><a class="r" href="https://www.detran.sp.gov.br" target="_blank" rel="noopener">abrir ↗</a></div>
+      <div class="linha-item"><span class="l">IPVA — Sefaz-SP</span><a class="r" href="https://portal.fazenda.sp.gov.br/servicos/ipva" target="_blank" rel="noopener">abrir ↗</a></div>
+    </div>
+    <div class="cartao"><h3>Receita Federal</h3>
+      <div class="linha-item"><span class="l">Situação do CPF</span><a class="r" href="https://servicos.receita.fazenda.gov.br/servicos/cpf/consultasituacao/consultapublica.asp" target="_blank" rel="noopener">abrir ↗</a></div>
+      <div class="linha-item"><span class="l">Consulta CNPJ</span><a class="r" href="https://solucoes.receita.fazenda.gov.br/servicos/cnpjreva/cnpjreva_solicitacao.asp" target="_blank" rel="noopener">abrir ↗</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- PERFIL -->
+<section class="tela" id="t-perfil">
+  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Meu perfil</h1><div class="sub">Conta, privacidade e ajuda</div></div></div>
+  <div class="miolo">
+    <div class="cartao" style="display:flex;align-items:center;gap:14px">
+      <div class="avatar" id="perfAvatar" style="width:56px;height:56px">M</div>
+      <div style="flex:1"><h3 id="perfNome">Motorista</h3><div class="cz" id="perfEmail">Plano Grátis</div></div>
+      <span class="pill neutro" id="perfBadge">GRÁTIS</span>
+    </div>
+    <div class="cartao">
+      <div class="linha-item" onclick="go('t-planos')" style="cursor:pointer"><span class="l">Planos e assinatura</span><span class="r">→</span></div>
+      <div class="linha-item" onclick="go('t-consultas')" style="cursor:pointer"><span class="l">Consultas oficiais</span><span class="r">→</span></div>
+      <div class="linha-item" onclick="go('t-transparencia')" style="cursor:pointer"><span class="l">Como funcionamos · Transparência</span><span class="r">→</span></div>
+      <div class="linha-item" onclick="toast('LGPD: no app real, aqui você exporta ou exclui seus dados.')" style="cursor:pointer"><span class="l">Meus dados (LGPD)</span><span class="r">→</span></div>
+      <div class="linha-item" onclick="window.open('termos.html','_blank')" style="cursor:pointer"><span class="l">Termos de Uso</span><span class="r">→</span></div>
+      <div class="linha-item" onclick="window.open('privacidade.html','_blank')" style="cursor:pointer"><span class="l">Política de Privacidade</span><span class="r">→</span></div>
+      <div class="linha-item" onclick="cancelarPlano()" style="cursor:pointer"><span class="l" style="color:var(--vicio)">Cancelar assinatura (1 toque)</span><span class="r">→</span></div>
+      <div class="linha-item" onclick="sair()" style="cursor:pointer"><span class="l">Sair da conta</span><span class="r">→</span></div>
+    </div>
+    <p class="rodape-legal">Verimulta é plataforma de autoatendimento: probabilidades são estimativas — a decisão é do órgão julgador. Dados tratados conforme a LGPD. Um produto PRIMECORP BROKERS — CONSULTORIA E INTERMEDIAÇÃO DE NEGÓCIOS LTDA · CNPJ 55.745.297/0001-06 · Sumaré/SP.</p>
+  </div>
+</section>
+
+<!-- TRANSPARÊNCIA -->
+<section class="tela" id="t-transparencia">
+  <div class="cab"><button class="volta" onclick="go('t-perfil')">←</button><div><h1>Transparência total</h1><div class="sub">Como funcionamos</div></div></div>
+  <div class="miolo">
+    <div class="cartao"><h3>O que fazemos</h3><div class="cz">Organizamos seus documentos, auditamos a autuação com 14 verificações legais e apontamos as possibilidades com uma probabilidade estimada — antes de você gastar qualquer valor.</div></div>
+    <div class="cartao"><h3>O que nunca fazemos</h3><div class="cz">Não garantimos cancelamento, não prometemos resultado e não substituímos advogado no Judiciário. A defesa é protocolada por você, em seu nome, no âmbito administrativo.</div></div>
+    <div class="cartao"><h3>Seus dados</h3><div class="cz">Tratamento com base no seu consentimento (LGPD), finalidades específicas, biometria opcional e exclusão quando você quiser.</div></div>
+  </div>
+</section>
+
+<!-- NAV -->
+<nav class="navbar" id="navbar" style="display:none">
+  <button data-t="t-home" class="on" onclick="go('t-home')"><span class="ic">🏠</span>Início</button>
+  <button data-t="t-status" onclick="go('t-status')"><span class="ic">📄</span>Recursos</button>
+  <button data-t="t-scan" class="centro" onclick="go('t-scan')"><span class="ic">📸</span>Verificar</button>
+  <button data-t="t-rede" onclick="go('t-rede')"><span class="ic">🤝</span>Rede</button>
+  <button data-t="t-perfil" onclick="go('t-perfil')"><span class="ic">👤</span>Perfil</button>
+</nav>
+
+<!-- PAYWALL -->
+<div class="veu" id="veu" onclick="fecharPaywall()"></div>
+<div class="folha" id="paywall">
+  <div class="puxador"></div>
+  <span class="pill pro">⚡ DESBLOQUEIE O VERIMULTA</span>
+  <h2 style="margin-top:10px" id="pwTitulo">Veja a probabilidade e gere sua defesa</h2>
+  <p class="cz">Sua conta grátis já encontrou a multa. Assine para agir sobre ela:</p>
+  <ul class="beneficios">
+    <li><span class="ck">✓</span>Probabilidade estimada de êxito em cada multa</li>
+    <li><span class="ck">✓</span>Defesas ilimitadas prontas para protocolar</li>
+    <li><span class="ck">✓</span>Alertas de todos os prazos — nunca perca uma data</li>
+    <li><span class="ck">✓</span>Acompanhamento do recurso até o resultado</li>
+  </ul>
+  <button class="btn amarelo" onclick="fecharPaywall();go('t-planos')">Assinar a partir de R$ 29,90/mês</button>
+  <button class="btn fantasma" onclick="fecharPaywall()">Agora não</button>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ===== VERIMULTA — APP CONECTADO À API v1 ===== */
+window.VERIMULTA_API_URL = window.VERIMULTA_API_URL || '';  // vazio = mesma origem (Render). No Netlify: 'https://SEU-APP.onrender.com'
+const API = window.VERIMULTA_API_URL;
+const APP = { token:null, nome:'', email:'', cpf:'', placa:'', fotoURL:'', assinante:false, plano:'Grátis', multas:[], veiculos:[], diag:null };
+const TELAS_SEM_NAV = ['t-login','t-cadastro','t-analise'];
+
+function go(id){
+  document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa'));
+  const alvo = document.getElementById(id);
+  alvo.classList.add('ativa'); alvo.scrollTop = 0;
+  document.getElementById('navbar').style.display = TELAS_SEM_NAV.includes(id) ? 'none' : 'flex';
+  document.querySelectorAll('.navbar button').forEach(b=>b.classList.toggle('on', b.dataset.t===id));
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('mostra');
+  clearTimeout(t._tm); t._tm = setTimeout(()=>t.classList.remove('mostra'), 3800);
+}
+async function api(caminho, opts={}){
+  try{
+    const cab = opts.headers || {};
+    if(APP.token) cab['Authorization'] = 'Bearer ' + APP.token;
+    if(opts.json){ cab['Content-Type']='application/json'; opts.body = JSON.stringify(opts.json); }
+    const r = await fetch(API + caminho, { ...opts, headers: cab });
+    const dados = await r.json().catch(()=>({}));
+    return { ok: r.ok, status: r.status, dados };
+  }catch(e){ return mockApi(caminho, opts); }   // sem servidor → modo demonstração
+}
+/* ===== MODO DEMONSTRAÇÃO (arquivo aberto sem API) ===== */
+const MOCK = { assinante:false, nome:'', email:'', multa:{ id:1, ait:'T00226588', orgao:'Prefeitura de Sumaré/SP',
+  enquadramento:'7366-2', descricao:'Dirigir utilizando celular', valor:130.16, pontos:4,
+  data_infracao:'2026-07-10', prazo_defesa:'2026-09-28', origem:'agente' } };
+function mockVerifs(){
+  const B = { A1:'CTB art. 280', A2:'CTB arts. 21, 22 e 24', A3:'CTB arts. 281–282', A4:'INMETRO 158/2022',
+    A5:'Homologação INMETRO', A6:'CONTRAN 798/2020', A7:'Sinalização R-19 / CTB 90', A8:'Cadastro do equipamento',
+    A9:'Enquadramento legal', A10:'Compatibilidade fática', A11:'Bis in idem', A12:'Fragilidade probatória',
+    A13:'Cadeia NA×NP', A14:'Consistência documental' };
+  const radar = ['A4','A5','A6','A7','A8'];
+  return Object.keys(B).map(c=>({ codigo:c, base_legal:B[c], aplicavel:!radar.includes(c),
+    vicio:c==='A12', detalhe: c==='A12' ? 'Fragilidade probatória: sem registro fotográfico e observação truncada.'
+      : radar.includes(c) ? 'Não se aplica: autuação por agente.' : 'Verificação sem vício identificado.' }));
+}
+function mockApi(caminho, opts){
+  const ok = d => ({ ok:true, status:200, dados:d });
+  if(caminho.includes('/auth/')){ const b=opts.json||{}; MOCK.nome=b.nome||MOCK.nome||'Visitante'; MOCK.email=b.email||MOCK.email;
+    return ok({ token:'demo', usuario:{ id:1, nome:MOCK.nome, email:MOCK.email, plano: MOCK.assinante?'individual':'gratis' } }); }
+  if(caminho==='/v1/veiculos' && (!opts.method||opts.method==='GET')) return ok([{id:1,placa:'SVE3J45',modelo:'Meu veículo'}]);
+  if(caminho==='/v1/veiculos') return ok({id:1});
+  if(caminho==='/v1/multas' && (!opts.method||opts.method==='GET')) return ok([MOCK.multa]);
+  if(caminho==='/v1/multas/scan') return ok({ multa_id:1 });
+  if(caminho.includes('/diagnostico')){ const vs=mockVerifs();
+    return ok({ multa:MOCK.multa, verificacoes:vs, vicios_encontrados:1,
+      probabilidade: MOCK.assinante?30:null, faixa: MOCK.assinante?'baixa':'bloqueada',
+      paywall: MOCK.assinante?null:{mensagem:'Assine para ver a probabilidade.'},
+      disclaimer:'Estimativa — a decisão é do órgão julgador.' }); }
+  if(caminho==='/v1/recursos' && opts.method==='POST'){
+    if(!MOCK.assinante) return { ok:false, status:402, dados:{erro:'Assine um plano.'} };
+    return ok({ recurso_id:1, texto:`AO ÓRGÃO DE TRÂNSITO — Prefeitura de Sumaré/SP
+
+DEFESA PRÉVIA — Auto de Infração nº T00226588
+Requerente: ${MOCK.nome}
+Veículo/Placa: SVE3J45 · Enquadramento: 7366-2
+
+O(A) requerente, com fundamento no art. 281 e seguintes do CTB, vem apresentar DEFESA PRÉVIA pelos fundamentos:
+
+1. Fragilidade probatória: ausência de registro fotográfico e observação truncada no auto. Fundamento: análise probatória (verificação A12).
+
+Diante do exposto, requer o ACOLHIMENTO da presente defesa e o ARQUIVAMENTO do auto.
+
+Nestes termos, pede deferimento.
+
+________________________________
+${MOCK.nome}
+(protocolado pelo próprio requerente)
+
+— MODO DEMONSTRAÇÃO · Verimulta` }); }
+  if(caminho==='/v1/checkout') return ok({ modo:'demo' });
+  if(caminho.includes('/ativar')){ MOCK.assinante=true; return ok({ ok:true, plano:'Individual' }); }
+  if(caminho.includes('/cancelar')){ MOCK.assinante=false; return ok({ ok:true }); }
+  if(caminho.includes('/desfecho')) return ok({ ok:true });
+  return ok({});
+}
+function salvarSessao(){ try{ localStorage.setItem('vm_sessao', JSON.stringify({token:APP.token,nome:APP.nome,email:APP.email,plano:APP.plano,assinante:APP.assinante})); }catch(e){} }
+function lerSessao(){ try{ return JSON.parse(localStorage.getItem('vm_sessao')||'null'); }catch(e){ return null; } }
+
+/* ===== autenticação ===== */
+async function fazerCadastro(){
+  const nome = document.getElementById('cd-nome').value.trim();
+  const cpf = document.getElementById('cd-cpf').value.trim();
+  const email = document.getElementById('cd-email').value.trim();
+  const senha = document.getElementById('cd-senha').value;
+  const placa = document.getElementById('cd-placa').value.trim().toUpperCase();
+  if(!nome || !email || !senha){ toast('Preencha nome, e-mail e senha.'); return; }
+  if(senha.length < 8){ toast('A senha precisa de pelo menos 8 caracteres.'); return; }
+  toast('Criando sua conta…');
+  const r = await api('/v1/auth/register', { method:'POST', json:{ nome, cpf, email, senha } });
+  if(!r.ok){ toast(r.dados.erro || 'Falha no cadastro.'); return; }
+  APP.token = r.dados.token; APP.nome = nome; APP.email = email; APP.cpf = cpf;
+  APP.assinante = false; APP.plano = 'Grátis';
+  const f = document.getElementById('cd-foto').files[0];
+  if(f){ const rd = new FileReader(); rd.onload = e=>{ APP.fotoURL = e.target.result; aplicarUsuario(); }; rd.readAsDataURL(f); }
+  if(placa){ await api('/v1/veiculos', { method:'POST', json:{ placa, modelo:'Meu veículo' } }); APP.placa = placa; }
+  salvarSessao(); await carregarDados(); aplicarUsuario(); go('t-home');
+  setTimeout(()=>toast(APP.multas.length ? `Encontramos ${APP.multas.length} multa(s) no seu CPF 👇` : 'Conta criada! Verifique sua primeira multa em 60s 📸'), 700);
+}
+async function fazerLogin(){
+  const u = document.getElementById('lg-user').value.trim();
+  const s = document.getElementById('lg-senha').value;
+  if(!u || !s){ toast('Digite e-mail e senha.'); return; }
+  toast('Entrando…');
+  const r = await api('/v1/auth/login', { method:'POST', json:{ email:u, senha:s } });
+  if(!r.ok){ toast(r.dados.erro || 'Credenciais inválidas.'); return; }
+  APP.token = r.dados.token; APP.nome = r.dados.usuario.nome; APP.email = r.dados.usuario.email;
+  APP.assinante = r.dados.usuario.plano !== 'gratis';
+  APP.plano = r.dados.usuario.plano === 'gratis' ? 'Grátis' : r.dados.usuario.plano.toUpperCase();
+  salvarSessao(); await carregarDados(); aplicarUsuario(); go('t-home'); toast('Bem-vindo(a) de volta! 👋');
+}
+function biometria(){ toast('Biometria entra na versão de produção — use e-mail e senha.'); }
+function sair(){ APP.token=null; try{ localStorage.removeItem('vm_sessao'); }catch(e){}; go('t-login'); toast('Você saiu da conta.'); }
+
+/* ===== dados ===== */
+async function carregarDados(){
+  const [v, m] = await Promise.all([ api('/v1/veiculos'), api('/v1/multas') ]);
+  APP.veiculos = v.ok ? v.dados : [];
+  APP.multas = m.ok ? m.dados : [];
+  if(APP.veiculos[0]) APP.placa = APP.veiculos[0].placa;
+  renderHome();
+}
+function renderHome(){
+  document.getElementById('hMultas').textContent = APP.multas.length || '0';
+  const comPrazo = APP.multas.filter(x=>x.prazo_defesa).sort((a,b)=>a.prazo_defesa.localeCompare(b.prazo_defesa))[0];
+  document.getElementById('hPrazo').textContent = comPrazo ? Math.max(0, Math.round((new Date(comPrazo.prazo_defesa)-Date.now())/86400000)) + 'd' : '—';
+  const c = document.getElementById('cardMulta');
+  if(APP.multas.length){
+    const m = APP.multas[0];
+    c.innerHTML = `<div class="cartao" style="border-left:4px solid var(--vicio)">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="pill alerta">ENCONTRADA NO SEU CPF</span><span class="mono" style="font-size:11px;color:var(--cinza)">AIT ${m.ait||'—'}</span></div>
+      <h3 style="margin-top:10px">${m.descricao||'Autuação'} · ${APP.placa||''}</h3>
+      <div class="cz">R$ ${(m.valor||0).toFixed(2).replace('.',',')} · ${m.pontos||0} pontos · ${m.orgao||''} ${m.prazo_defesa? '· Defesa até <b>'+m.prazo_defesa.split('-').reverse().join('/')+'</b>':''}</div>
+      <button class="btn mini amarelo" style="margin-top:13px" onclick="verDiagnostico(${m.id})">🔍 &nbsp;Ver a auditoria desta multa</button>
+    </div>`;
+  } else {
+    c.innerHTML = `<div class="cartao" style="border-left:4px solid var(--ok)">
+      <span class="pill ok">TUDO LIMPO ATÉ AGORA</span>
+      <h3 style="margin-top:10px">Nenhuma multa cadastrada</h3>
+      <div class="cz">Recebeu uma notificação? Verifique em 60 segundos antes de pagar.</div>
+      <button class="btn mini amarelo" style="margin-top:13px" onclick="go('t-scan')">📸 &nbsp;Verificar uma multa</button>
+    </div>`;
+  }
+}
+
+/* ===== momento mágico ===== */
+function analisar(){
+  go('t-analise');
+  const passos = [
+    ['🔍','Lendo o documento…','OCR extraindo os campos',15],
+    ['📑','Campos extraídos','Órgão, enquadramento, datas, local',40],
+    ['⚖️','Auditando…','Rodando as 14 verificações (A1–A14)',70],
+    ['📊','Calculando probabilidade','Combinando os fundamentos',92],
+    ['✅','Pronto!','Abrindo o diagnóstico',100]
+  ];
+  let i = 0;
+  const tick = async ()=>{
+    const [ic,t,p,w] = passos[i];
+    document.getElementById('anIcone').textContent = ic;
+    document.getElementById('anTexto').textContent = t;
+    document.getElementById('anPasso').textContent = p;
+    document.getElementById('anBarra').style.width = w+'%';
+    i++;
+    if(i < passos.length){ setTimeout(tick, 800); return; }
+    // fim da animação: garante uma multa e abre o diagnóstico real
+    let multaId = APP.multas[0] && APP.multas[0].id;
+    if(!multaId){
+      const fd = new FormData();
+      const exemplo = { ait:'T00226588', orgao:'Prefeitura de Sumaré/SP', enquadramento:'7366-2',
+        descricao:'Dirigir utilizando celular', valor:'130.16', pontos:'4',
+        data_infracao:'2026-07-10', data_notificacao:'2026-07-30', prazo_defesa:'2026-09-28',
+        origem:'agente', tem_foto:'false', observacao:'CONDUTOR NAO IDENTI' };
+      const arq = document.getElementById('scanFile').files[0];
+      if(arq) fd.append('foto', arq);
+      if(APP.veiculos[0]) exemplo.veiculo_id = APP.veiculos[0].id;
+      Object.entries(exemplo).forEach(([k,v])=>fd.append(k,v));
+      const r = await api('/v1/multas/scan', { method:'POST', body: fd });
+      if(!r.ok){ toast('Falha ao registrar a multa.'); go('t-home'); return; }
+      multaId = r.dados.multa_id;
+      await carregarDados();
+    }
+    verDiagnostico(multaId);
+  };
+  tick();
+}
+
+async function verDiagnostico(id){
+  const r = await api('/v1/multas/'+id+'/diagnostico');
+  if(!r.ok){ toast('Não foi possível carregar o diagnóstico.'); return; }
+  const d = r.dados; APP.diag = { id, ...d };
+  document.getElementById('diagSub').textContent = 'AIT ' + (d.multa.ait||'—') + ' · ' + (d.multa.orgao||'');
+  document.getElementById('diagInfo').innerHTML =
+    `<div class="linha-item"><span class="l">Valor</span><span class="r">R$ ${(d.multa.valor||0).toFixed(2).replace('.',',')}</span></div>
+     <div class="linha-item"><span class="l">Prazo Defesa Prévia</span><span class="r" style="color:var(--vicio)">${d.multa.prazo_defesa? d.multa.prazo_defesa.split('-').reverse().join('/') : '—'}</span></div>
+     <div class="linha-item"><span class="l">Vícios encontrados</span><span class="r">${d.vicios_encontrados}</span></div>
+     <button class="btn mini" style="margin-top:10px" onclick="imprimirExtrato()">🧾 &nbsp;Emitir Extrato em PDF</button>`;
+  const L = document.getElementById('listaChecks'); L.innerHTML='';
+  const aplicaveis = d.verificacoes.filter(v=>v.aplicavel);
+  const naoAplic = d.verificacoes.length - aplicaveis.length;
+  aplicaveis.forEach(v=>{
+    L.insertAdjacentHTML('beforeend', `<div class="checkline ${v.vicio?'vicio':'ok'}">
+      <span class="ic">${v.vicio?'!':'✓'}</span><span class="cod">${v.codigo}</span>${v.detalhe}</div>`);
+  });
+  if(naoAplic>0) L.insertAdjacentHTML('beforeend', `<div class="checkline ok"><span class="ic">✓</span><span class="cod">+${naoAplic}</span>Verificações de radar não aplicáveis (autuação por agente)</div>`);
+  const pro = d.probabilidade !== null;
+  APP.assinante = pro || APP.assinante;
+  document.getElementById('probConteudo').classList.toggle('borrado', !pro);
+  document.getElementById('probTrava').style.display = pro ? 'none' : 'flex';
+  document.getElementById('travaDefesa').style.display = pro ? 'none' : 'inline-flex';
+  if(pro){
+    document.getElementById('probVal').textContent = d.probabilidade + '%';
+    setTimeout(()=>document.getElementById('probBarra').style.width = d.probabilidade + '%', 150);
+  } else { document.getElementById('probVal').textContent = '••%'; }
+  go('t-diag');
+  if(!pro) setTimeout(()=>abrirPaywall('probabilidade'), 900);
+}
+
+/* ===== defesa ===== */
+async function tentarDefesa(){
+  if(!APP.diag){ toast('Abra o diagnóstico de uma multa primeiro.'); return; }
+  const r = await api('/v1/recursos', { method:'POST', json:{ multa_id: APP.diag.id } });
+  if(r.status === 402){ abrirPaywall('defesa'); return; }
+  if(!r.ok){ toast(r.dados.erro || 'Falha ao gerar a defesa.'); return; }
+  document.getElementById('defCard').textContent = r.dados.texto;
+  go('t-defesa');
+  toast('Defesa gerada pelo motor de auditoria ⚖️');
+}
+function protocolar(){
+  document.getElementById('statusVazio').style.display = 'none';
+  document.getElementById('statusCard').style.display = 'block';
+  go('t-status');
+  toast('Acompanhe por aqui — e registre o resultado quando sair!');
+}
+
+
+/* ===== Impressão em PDF (papel timbrado) ===== */
+function abrirImpressao(titulo, corpoHtml){
+  const w = window.open('', '_blank');
+  if(!w){ toast('Permita pop-ups para gerar o PDF.'); return; }
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${titulo}</title>
+  <style>body{font-family:Georgia,'Times New Roman',serif;color:#12171D;margin:48px 56px;line-height:1.7}
+  .timbre{display:flex;align-items:center;gap:10px;border-bottom:3px solid #0B3C7E;padding-bottom:12px;margin-bottom:26px}
+  .timbre .q{width:34px;height:34px;border-radius:9px;background:#0B3C7E;display:inline-flex;align-items:center;justify-content:center}
+  .timbre b{font-family:Arial;font-size:20px;letter-spacing:.02em}
+  h1{font-size:17px;text-align:center;margin:10px 0 20px;font-family:Arial}
+  pre{white-space:pre-wrap;font-family:inherit;font-size:13.5px}
+  table{width:100%;border-collapse:collapse;font-size:12px;font-family:Arial}
+  td,th{border:1px solid #C9D2DC;padding:6px 9px;text-align:left}
+  th{background:#EDF2FA}
+  .rod{margin-top:34px;border-top:1px solid #C9D2DC;padding-top:10px;font-size:10px;color:#5B6570;font-family:Arial}
+  @media print{.noprint{display:none}}</style></head><body>
+  <div class="timbre"><span class="q"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 12.5L9.5 18L20 6.5" stroke="#FFC933" stroke-width="3.6" stroke-linecap="round"/></svg></span><b>VERIMULTA</b><span style="margin-left:auto;font-family:Arial;font-size:10px;color:#5B6570">verimulta.com.br</span></div>
+  ${corpoHtml}
+  <div class="rod">Documento organizado pela plataforma Verimulta (autoatendimento) · PRIMECORP BROKERS — CONSULTORIA E INTERMEDIAÇÃO DE NEGÓCIOS LTDA · CNPJ 55.745.297/0001-06 · Sumaré/SP<br>Probabilidades são estimativas; a decisão é do órgão julgador. Protocolo realizado pelo próprio requerente.</div>
+  <script>setTimeout(()=>window.print(), 400)</scr`+`ipt></body></html>`);
+  w.document.close();
+}
+function imprimirDefesa(){
+  const t = document.getElementById('defCard').textContent;
+  if(!t.trim()){ toast('Gere a defesa primeiro.'); return; }
+  abrirImpressao('Defesa Prévia — Verimulta', '<h1>DEFESA PRÉVIA</h1><pre>'+t.replace(/</g,'&lt;')+'</pre>');
+}
+function imprimirExtrato(){
+  if(!APP.diag){ toast('Abra um diagnóstico primeiro.'); return; }
+  const d = APP.diag;
+  const linhas = d.verificacoes.map(v=>`<tr><td>${v.codigo}</td><td>${v.aplicavel?(v.vicio?'⚠️ VÍCIO':'✓ OK'):'—'}</td><td>${v.detalhe}</td><td>${v.base_legal}</td></tr>`).join('');
+  const prob = d.probabilidade!==null ? d.probabilidade+'% ('+d.faixa+')' : 'disponível para assinantes';
+  abrirImpressao('Extrato de Auditoria — Verimulta',
+    `<h1>EXTRATO DE AUDITORIA TÉCNICA</h1>
+     <p style="font-family:Arial;font-size:12.5px"><b>AIT:</b> ${d.multa.ait||'—'} · <b>Órgão:</b> ${d.multa.orgao||'—'} · <b>Valor:</b> R$ ${(d.multa.valor||0).toFixed(2).replace('.',',')} · <b>Prazo defesa:</b> ${d.multa.prazo_defesa||'—'}<br><b>Probabilidade estimada de êxito:</b> ${prob}</p>
+     <table><tr><th>Verif.</th><th>Status</th><th>Constatação</th><th>Base legal</th></tr>${linhas}</table>`);
+}
+/* ===== assinatura ===== */
+const PW_TITULOS = { placa3:'Consulta de placas de terceiros é exclusiva dos planos', probabilidade:'Veja a probabilidade e gere sua defesa', defesa:'Gere sua Defesa Prévia agora', alertas:'Ative os alertas de prazos', frota:'Painel Frota para 10+ veículos' };
+function abrirPaywall(motivo){
+  document.getElementById('pwTitulo').textContent = PW_TITULOS[motivo] || PW_TITULOS.probabilidade;
+  document.getElementById('veu').classList.add('mostra');
+  document.getElementById('paywall').classList.add('mostra');
+}
+function fecharPaywall(){
+  document.getElementById('veu').classList.remove('mostra');
+  document.getElementById('paywall').classList.remove('mostra');
+}
+async function assinar(chave, nome){
+  const c = await api('/v1/checkout', { method:'POST', json:{ plano: chave } });
+  if(!c.ok){ toast(c.dados.erro || 'Falha ao iniciar o checkout.'); return; }
+  if(c.dados.checkout_url){                       // gateway real: abre o pagamento
+    window.open(c.dados.checkout_url, '_blank');
+    toast('Conclua o pagamento na aba do Mercado Pago — a ativação é automática.');
+    return;
+  }
+  const r = await api('/v1/assinaturas/ativar', { method:'POST', json:{ plano: chave } });
+  if(!r.ok){ toast(r.dados.erro || 'Falha ao ativar o plano.'); return; }
+  APP.assinante = true; APP.plano = nome; salvarSessao();
+  aplicarPlanoUI(); go('t-home');
+  toast('⚡ Plano '+nome+' ativado no servidor! Tudo desbloqueado.');
+  if(APP.diag) verDiagnostico(APP.diag.id).then(()=>go('t-home'));
+}
+async function cancelarPlano(){
+  if(!APP.assinante){ toast('Você está no plano Grátis.'); return; }
+  const r = await api('/v1/assinaturas/cancelar', { method:'POST', json:{} });
+  if(!r.ok){ toast('Falha ao cancelar.'); return; }
+  APP.assinante = false; APP.plano = 'Grátis'; salvarSessao();
+  aplicarPlanoUI(); toast('Assinatura cancelada em 1 toque. Sentiremos sua falta!');
+}
+
+/* ===== UI de usuário/plano ===== */
+function aplicarUsuario(){
+  const primeiro = (APP.nome||'Motorista').trim().split(' ')[0];
+  document.getElementById('homeNome').textContent = primeiro;
+  document.getElementById('perfNome').textContent = APP.nome || 'Motorista';
+  document.getElementById('perfEmail').textContent = APP.email || ('Plano ' + APP.plano);
+  ['vePlaca','debPlaca'].forEach(i=>{ const el=document.getElementById(i); if(el) el.textContent = APP.placa || '—'; });
+  const ini = primeiro.charAt(0).toUpperCase() || 'M';
+  ['homeAvatar','perfAvatar'].forEach(idEl=>{
+    const el = document.getElementById(idEl);
+    el.innerHTML = APP.fotoURL ? '<img src="'+APP.fotoURL+'" alt="foto">' : ini;
+  });
+  aplicarPlanoUI();
+}
+function aplicarPlanoUI(){
+  const pro = APP.assinante;
+  document.getElementById('homeBadge').innerHTML = pro
+    ? '<span class="pill pro">⚡ PLANO '+APP.plano.toUpperCase()+' ATIVO</span>'
+    : '<span class="pill" style="background:rgba(255,255,255,.14);color:#CFE0F5">PLANO GRÁTIS · MODO VISUALIZAÇÃO</span>';
+  const badge = document.getElementById('perfBadge');
+  badge.textContent = pro ? '⚡ '+APP.plano.toUpperCase() : 'GRÁTIS';
+  badge.className = 'pill ' + (pro ? 'pro' : 'neutro');
+  document.getElementById('cardAssine').style.display = pro ? 'none' : 'block';
+  document.getElementById('cnhBorrado').classList.toggle('borrado', !pro);
+  document.getElementById('cnhTrava').style.display = pro ? 'none' : 'flex';
+  document.getElementById('frotaBorrado').classList.toggle('borrado', !pro);
+  document.getElementById('frotaTrava').style.display = pro ? 'none' : 'flex';
+}
+
+/* ===== utilidades das outras telas ===== */
+function consultarDivida(){
+  const p = document.getElementById('da-placa').value.trim().toUpperCase();
+  if(!p){ toast('Informe ao menos a placa.'); return; }
+  if(APP.placa && p !== APP.placa && !APP.assinante){ abrirPaywall('placa3'); return; }
+  document.getElementById('da-result').style.display = 'block';
+  toast('Consulta às bases oficiais entra com o credenciamento (roadmap).');
+}
+function precoParceiro(){
+  const [m, pix] = document.getElementById('pc-cat').value.split('|');
+  document.getElementById('pc-12x').textContent = '12x R$ ' + m;
+  document.getElementById('pc-pix').textContent = 'R$ ' + Number(pix).toLocaleString('pt-BR');
+}
+
+/* ===== retomar sessão ===== */
+(function(){
+  const s = lerSessao();
+  if(s && s.token){
+    APP.token = s.token; APP.nome = s.nome; APP.email = s.email;
+    APP.plano = s.plano || 'Grátis'; APP.assinante = !!s.assinante;
+    carregarDados().then(()=>{ aplicarUsuario(); go('t-home'); }).catch(()=>{});
+  }
+})();
+</script>
+
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
+</body>
+</html>

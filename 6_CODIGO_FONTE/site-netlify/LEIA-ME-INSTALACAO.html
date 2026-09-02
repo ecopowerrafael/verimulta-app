@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verimulta — Instalação no Servidor</title>
+<style>
+:root{--ink:#12171D;--papel:#F7F8F5;--placa:#0B3C7E;--sinal:#FFC933;--ok:#0E8A5F;--cinza:#5B6570;--linha:#E4E7E1}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--papel);color:var(--ink);line-height:1.65;padding:40px 20px 70px}
+.q{max-width:780px;margin:0 auto}
+h1{font-size:clamp(24px,5vw,34px);font-weight:900;letter-spacing:-.01em;margin:10px 0 6px}
+.sub{color:var(--cinza);margin-bottom:28px}
+.bloco{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:24px;margin-bottom:16px}
+.bloco h2{font-size:18px;font-weight:800;margin-bottom:10px}
+.p{display:flex;gap:12px;margin-bottom:10px;font-size:14px;color:var(--cinza)}
+.p b{color:var(--ink)}
+.p .n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--placa);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:2px}
+code{background:#EEF1EC;border:1px solid var(--linha);border-radius:6px;padding:2px 7px;font-size:12.5px}
+.tab{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.tab td{padding:8px 10px;border-top:1px solid var(--linha);color:var(--cinza)}
+.tab td:first-child{font-weight:700;color:var(--ink);white-space:nowrap}
+.aviso{background:#FFF7E0;border:1px solid #F0DFA0;border-radius:12px;padding:14px 16px;font-size:13px;color:#6b5a12;margin-bottom:16px}
+.logo{font-weight:900;font-size:22px;display:flex;align-items:center;gap:9px}
+.logo .c{width:30px;height:30px;border-radius:8px;background:var(--placa);display:inline-flex;align-items:center;justify-content:center}
+.logo svg{width:17px;height:17px}
+</style>
+</head>
+<body>
+<div class="q">
+  <div class="logo"><span class="c"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5L9.5 18L20 6.5" stroke="#FFC933" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>VERIMULTA</div>
+  <h1>Instalação no seu servidor</h1>
+  <p class="sub">Este pacote é a raiz do site: extraia e está no ar. Sem banco de dados, sem dependências — funciona em qualquer hospedagem.</p>
+
+  <div class="bloco">
+    <h2>O que tem no pacote</h2>
+    <table class="tab">
+      <tr><td>index.html</td><td>Site de vendas (página inicial do domínio)</td></tr>
+      <tr><td>app.html</td><td>App demonstrativo completo → fica em seudominio.com.br/app.html</td></tr>
+      <tr><td>manifest.json + icones/</td><td>Fazem o app virar ícone com a marca ao usar "Adicionar à tela inicial" no celular</td></tr>
+      <tr><td>.htaccess</td><td>Configuração Apache/cPanel: HTTPS forçado, cache e compressão</td></tr>
+      <tr><td>robots.txt</td><td>Libera indexação no Google</td></tr>
+    </table>
+  </div>
+
+  <div class="bloco">
+    <h2>Opção A — cPanel (a mais comum)</h2>
+    <div class="p"><span class="n">1</span><span>Entre no cPanel da sua hospedagem e abra o <b>Gerenciador de Arquivos</b>.</span></div>
+    <div class="p"><span class="n">2</span><span>Entre na pasta <code>public_html</code> (ou a pasta do domínio/subdomínio desejado).</span></div>
+    <div class="p"><span class="n">3</span><span>Clique em <b>Carregar (Upload)</b> e envie o arquivo <code>Verimulta_Servidor.zip</code>.</span></div>
+    <div class="p"><span class="n">4</span><span>Volte à pasta, clique com o botão direito no ZIP → <b>Extract / Extrair</b> ali mesmo.</span></div>
+    <div class="p"><span class="n">5</span><span>Apague o ZIP após extrair. Acesse <b>seudominio.com.br</b> — o site já está no ar, e o app em <b>/app.html</b>.</span></div>
+    <div class="p"><span class="n">6</span><span>Ative o <b>SSL grátis</b> (Let's Encrypt) em cPanel → SSL/TLS Status → Run AutoSSL. O .htaccess já redireciona tudo para HTTPS.</span></div>
+  </div>
+
+  <div class="bloco">
+    <h2>Opção B — FTP (FileZilla)</h2>
+    <div class="p"><span class="n">1</span><span>Extraia o ZIP no seu computador.</span></div>
+    <div class="p"><span class="n">2</span><span>Conecte no servidor com os dados de FTP da hospedagem.</span></div>
+    <div class="p"><span class="n">3</span><span>Arraste <b>todo o conteúdo</b> da pasta extraída (inclusive o .htaccess, que é oculto — ative "mostrar arquivos ocultos") para dentro de <code>public_html</code>.</span></div>
+  </div>
+
+  <div class="bloco">
+    <h2>Opção C — VPS / Nginx</h2>
+    <div class="p"><span class="n">1</span><span>Envie os arquivos para a pasta do site, ex.: <code>/var/www/verimulta</code>.</span></div>
+    <div class="p"><span class="n">2</span><span>O .htaccess não vale no Nginx — aponte o server block com <code>root /var/www/verimulta;</code> e <code>index index.html;</code> e use o Certbot para o HTTPS.</span></div>
+  </div>
+
+  <div class="bloco">
+    <h2>Depois de instalar (3 ajustes)</h2>
+    <div class="p"><span class="n">1</span><span><b>Formulário da lista de espera:</b> crie um form grátis em formspree.io, copie o endpoint e cole no <code>TORQON_CONFIG</code> no final do <code>index.html</code> (campo <code>formEndpoint</code>). Sem isso o formulário roda em modo demonstração.</span></div>
+    <div class="p"><span class="n">2</span><span><b>Links de pagamento:</b> quando criar as cobranças no gateway (Mercado Pago, Stripe ou Asaas), cole os links em <code>paymentLinks</code> no mesmo <code>TORQON_CONFIG</code>.</span></div>
+    <div class="p"><span class="n">3</span><span><b>Teste no celular:</b> abra /app.html, use "Adicionar à tela inicial" e confira o ícone azul com o check amarelo.</span></div>
+  </div>
+
+  <div class="aviso"><b>Importante:</b> este pacote contém apenas os arquivos públicos. Os documentos de negócio (PRD, naming, lançamento, deck) ficam no outro ZIP — não os envie ao servidor público. O app é um demonstrativo: OCR real, consultas oficiais automáticas, pagamentos e biometria real entram com o desenvolvimento do MVP (handoff pronto).</div>
+</div>
+</body>
+</html>

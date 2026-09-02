@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verimulta — Painel do Dono</title>
+<style>
+:root{--ink:#12171D;--papel:#F2F4F1;--placa:#0B3C7E;--noite:#071E42;--sinal:#FFC933;--ok:#0E8A5F;--vicio:#C22F2F;--cinza:#61707F;--linha:#E4E8E1}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--papel);color:var(--ink);padding:26px 18px 60px}
+.q{max-width:1080px;margin:0 auto}
+.topo{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:22px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:22px}
+.logo .c{width:34px;height:34px;border-radius:9px;background:var(--placa);display:inline-flex;align-items:center;justify-content:center;color:var(--sinal);font-weight:900}
+.chave{display:flex;gap:8px}
+.chave input{padding:11px 14px;border:1.5px solid var(--linha);border-radius:11px;font-size:14px;width:240px}
+.chave button{background:var(--placa);color:#fff;border:none;border-radius:11px;padding:11px 20px;font-weight:800;cursor:pointer}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px}
+.kpi{background:linear-gradient(150deg,var(--noite),var(--placa));color:#fff;border-radius:16px;padding:20px}
+.kpi .v{font-size:30px;font-weight:900;letter-spacing:-.02em}
+.kpi .k{font-size:11px;color:#9FB6DA;font-weight:700;letter-spacing:.06em;margin-top:3px}
+.kpi.amarelo{background:linear-gradient(135deg,var(--sinal),#FFB300);color:var(--ink)}
+.kpi.amarelo .k{color:#705D0E}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:860px){.grade{grid-template-columns:1fr}}
+.cartao{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:20px}
+.cartao h2{font-size:16px;font-weight:800;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--cinza);font-size:11px;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--linha)}
+td{padding:9px 10px;border-bottom:1px solid var(--linha)}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px}
+.pill.pro{background:#FFF1C7;color:#8A6A00}.pill.gratis{background:#E7EEF8;color:var(--placa)}
+.pill.ok{background:#E0F3EA;color:var(--ok)}.pill.pend{background:#FCEAE8;color:var(--vicio)}
+.vazio{color:var(--cinza);font-size:13px;padding:14px 0}
+#erro{background:#FCEAE8;border:1px solid #F2C7C3;color:#A32C23;border-radius:12px;padding:12px 16px;font-size:13px;display:none;margin-bottom:16px}
+.acoes{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.acoes button{background:#fff;border:2px solid var(--placa);color:var(--placa);border-radius:10px;padding:9px 16px;font-weight:800;cursor:pointer;font-size:13px}
+</style>
+</head>
+<body>
+<div class="q">
+  <div class="topo">
+    <div class="logo"><span class="c">✓</span>Painel Verimulta</div>
+    <div class="chave">
+      <input id="segredo" type="password" placeholder="Chave do administrador">
+      <button onclick="carregar()">Entrar</button>
+    </div>
+  </div>
+  <div id="erro"></div>
+  <div id="painel" style="display:none">
+    <div class="kpis">
+      <div class="kpi"><div class="v" id="kUsuarios">–</div><div class="k">USUÁRIOS</div></div>
+      <div class="kpi"><div class="v" id="kAssinantes">–</div><div class="k">ASSINANTES</div></div>
+      <div class="kpi amarelo"><div class="v" id="kMRR">–</div><div class="k">MRR ESTIMADO</div></div>
+      <div class="kpi"><div class="v" id="kMultas">–</div><div class="k">MULTAS AUDITADAS</div></div>
+      <div class="kpi"><div class="v" id="kRecursos">–</div><div class="k">DEFESAS GERADAS</div></div>
+    </div>
+    <div class="grade">
+      <div class="cartao"><h2>Últimos usuários</h2><table id="tUsuarios"><tr><th>Nome</th><th>E-mail</th><th>Plano</th><th>Desde</th></tr></table></div>
+      <div class="cartao"><h2>Movimentações de pagamento</h2><table id="tPagamentos"><tr><th>Evento</th><th>Plano</th><th>Valor</th><th>Status</th></tr></table></div>
+      <div class="cartao"><h2>Últimas multas auditadas</h2><table id="tMultas"><tr><th>AIT</th><th>Órgão</th><th>Valor</th><th>Origem</th></tr></table></div>
+      <div class="cartao">
+        <h2>E-mails e tarefas</h2>
+        <table id="tEmails"><tr><th>Tipo</th><th>Para</th><th>Status</th></tr></table>
+        <div class="acoes">
+          <button onclick="rodarPrazos()">▶ Rodar alertas de prazo</button>
+          <button onclick="rodarVarredura()">📡 Varrer placas agora</button>
+        </div>
+        <table id="tVarreduras" style="margin-top:14px"><tr><th>Varredura</th><th>Placas</th><th>Novas multas</th></tr></table>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+let SEG = '';
+async function api(rota, metodo='GET'){
+  const r = await fetch(rota, { method: metodo, headers: { 'x-admin-secret': SEG } });
+  if(r.status === 401) throw new Error('Chave incorreta.');
+  return r.json();
+}
+function linha(t, celulas){ const tr = document.createElement('tr'); tr.innerHTML = celulas.map(c=>'<td>'+c+'</td>').join(''); document.getElementById(t).appendChild(tr); }
+async function carregar(){
+  SEG = document.getElementById('segredo').value.trim();
+  const erro = document.getElementById('erro'); erro.style.display='none';
+  try{
+    const d = await api('/v1/admin/resumo');
+    document.getElementById('painel').style.display='block';
+    kUsuarios.textContent = d.usuarios; kAssinantes.textContent = d.assinantes;
+    kMRR.textContent = 'R$ ' + d.mrr.toFixed(2).replace('.',','); 
+    kMultas.textContent = d.multas; kRecursos.textContent = d.recursos;
+    ['tUsuarios','tPagamentos','tMultas','tEmails','tVarreduras'].forEach(id=>{ const t=document.getElementById(id); while(t.rows.length>1)t.deleteRow(1); });
+    d.ultimos_usuarios.forEach(u=>linha('tUsuarios',[u.nome,u.email,`<span class="pill ${u.plano==='gratis'?'gratis':'pro'}">${u.plano}</span>`,u.criado_em.slice(0,10)]));
+    d.pagamentos.forEach(p=>linha('tPagamentos',[p.evento,p.plano||'—','R$ '+(p.valor||0).toFixed(2).replace('.',','),`<span class="pill ${['authorized','approved'].includes(p.status)?'ok':'pend'}">${p.status}</span>`]));
+    d.ultimas_multas.forEach(m=>linha('tMultas',[m.ait||'—',m.orgao||'—','R$ '+(m.valor||0).toFixed(2).replace('.',','),m.origem]));
+    d.emails.forEach(e=>linha('tEmails',[e.tipo,e.para,`<span class="pill ${e.enviado?'ok':'gratis'}">${e.enviado?'enviado':'log'}</span>`]));
+    (d.varreduras||[]).forEach(v=>linha('tVarreduras',[v.criado_em.slice(0,16)+' ('+v.fonte+')',v.placas_verificadas,v.novas_multas]));
+  }catch(e){ erro.textContent = e.message || 'Falha ao carregar.'; erro.style.display='block'; }
+}
+async function rodarVarredura(){
+  try{ const r = await api('/v1/admin/tarefas/varredura','POST');
+    alert('Placas verificadas: '+r.placas_verificadas+' · Novas multas: '+r.novas_multas); carregar();
+  }catch(e){ alert(e.message); }
+}
+async function rodarPrazos(){
+  try{ const r = await api('/v1/admin/tarefas/prazos','POST');
+    alert('Alertas disparados agora: ' + r.disparados); carregar();
+  }catch(e){ alert(e.message); }
+}
+document.getElementById('segredo').addEventListener('keydown', e=>{ if(e.key==='Enter') carregar(); });
+</script>
+</body>
+</html>

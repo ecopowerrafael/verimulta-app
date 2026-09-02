@@ -1,0 +1,21 @@
+# Verimulta — configuração 1-clique do Render (Blueprint)
+services:
+  - type: web
+    name: verimulta
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node servidor.js
+    envVars:
+      # NODE_ENV=production torna JWT_SECRET, WEBHOOK_SECRET e ADMIN_SECRET
+      # obrigatórios: sem eles o processo aborta no boot (ver config.js).
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: WEBHOOK_SECRET
+        generateValue: true
+      - key: ADMIN_SECRET
+        generateValue: true
+      - key: GATEWAY
+        value: demo

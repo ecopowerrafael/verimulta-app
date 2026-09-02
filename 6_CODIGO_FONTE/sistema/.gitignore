@@ -1,0 +1,5 @@
+node_modules/
+verimulta.db*
+*.log
+nohup.out
+/tmp

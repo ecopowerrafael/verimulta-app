@@ -26,15 +26,19 @@
 
 ## ACESSO AO CÓDIGO-FONTE
 
-**Armazenamento Master:**
-- ZIP Selado: `e346289756cc0ed27b55d018bf3a0515d676cfe4e5ac6beaed6f3f8eb2aae117`
-- Localização: Backup seguro PrimeCorp
-- Protocolo de liberação: Autorização legal + NDA
+> **Atualizado em 02/09/2026.** O código deixou de ser referência e passou a estar
+> neste repositório: `sistema/` (backend + PWA) e `site-netlify/` (site estático).
+> Origem: cópia de 29/08/2026. Ver `AUDITORIA.md` para o laudo, o que foi corrigido
+> e as pendências conhecidas.
 
-**Repositório Git (Quando publicar):**
-- GitHub/GitLab privado
-- Branch protegido: `main` (produção)
-- Branch dev: `develop` (staging)
+**Armazenamento Master (histórico):**
+- ZIP Selado: `e346289756cc0ed27b55d018bf3a0515d676cfe4e5ac6beaed6f3f8eb2aae117`
+- Esse pacote não foi localizado nas máquinas da PrimeCorp; os arquivos-fonte
+  íntegros estão em `sistema/`.
+
+**Repositório Git:**
+- GitHub público — `agendaprimecorp-lgtm/verimulta`
+- Branch: `main`
 
 ## PRÓXIMOS PASSOS
 
