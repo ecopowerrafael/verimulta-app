@@ -116,5 +116,5 @@ não foram exercidas contra um banco real.
 
 ```bash
 cd 6_CODIGO_FONTE/sistema
-node teste.js      # 18 asserções, 0 falhas
+node teste.js      # 21 asserções, 0 falhas
 ```
