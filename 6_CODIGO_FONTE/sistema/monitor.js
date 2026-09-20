@@ -41,7 +41,8 @@ const FONTES = {
   sne: async () => []
 };
 function hash(s){ let h=0; for(const c of s) h=(h*31 + c.charCodeAt(0))|0; return h; }
-function hoje(mais){ return new Date(Date.now()+mais*86400000).toISOString().slice(0,10); }
+const { dataLocal } = require('./datas');
+function hoje(mais){ return dataLocal(mais); }   // dia civil do Brasil, não do servidor em UTC
 
 /** Varre todas as placas cadastradas em todas as fontes ativas. */
 async function varrerPlacas() {

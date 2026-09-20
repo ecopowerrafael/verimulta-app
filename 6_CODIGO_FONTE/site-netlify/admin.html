@@ -72,6 +72,19 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 <script>
+/* O banco grava em UTC (o certo). Aqui converte para a hora de Brasília só na
+   hora de mostrar — antes o painel exibia 3 horas à frente do relógio da casa. */
+const FUSO = 'America/Sao_Paulo';
+function comoData(v){ return v ? new Date(String(v).replace(' ','T') + (String(v).endsWith('Z')?'':'Z')) : null; }
+function dataBR(v){
+  const d = comoData(v); if(!d || isNaN(d)) return String(v||'');
+  return new Intl.DateTimeFormat('pt-BR',{timeZone:FUSO,day:'2-digit',month:'2-digit',year:'numeric'}).format(d);
+}
+function horaBR(v){
+  const d = comoData(v); if(!d || isNaN(d)) return String(v||'');
+  return new Intl.DateTimeFormat('pt-BR',{timeZone:FUSO,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(d);
+}
+
 let SEG = '';
 async function api(rota, metodo='GET'){
   const r = await fetch(rota, { method: metodo, headers: { 'x-admin-secret': SEG } });
@@ -89,11 +102,11 @@ async function carregar(){
     kMRR.textContent = 'R$ ' + d.mrr.toFixed(2).replace('.',','); 
     kMultas.textContent = d.multas; kRecursos.textContent = d.recursos;
     ['tUsuarios','tPagamentos','tMultas','tEmails','tVarreduras'].forEach(id=>{ const t=document.getElementById(id); while(t.rows.length>1)t.deleteRow(1); });
-    d.ultimos_usuarios.forEach(u=>linha('tUsuarios',[u.nome,u.email,`<span class="pill ${u.plano==='gratis'?'gratis':'pro'}">${u.plano}</span>`,u.criado_em.slice(0,10)]));
+    d.ultimos_usuarios.forEach(u=>linha('tUsuarios',[u.nome,u.email,`<span class="pill ${u.plano==='gratis'?'gratis':'pro'}">${u.plano}</span>`,dataBR(u.criado_em)]));
     d.pagamentos.forEach(p=>linha('tPagamentos',[p.evento,p.plano||'—','R$ '+(p.valor||0).toFixed(2).replace('.',','),`<span class="pill ${['authorized','approved'].includes(p.status)?'ok':'pend'}">${p.status}</span>`]));
     d.ultimas_multas.forEach(m=>linha('tMultas',[m.ait||'—',m.orgao||'—','R$ '+(m.valor||0).toFixed(2).replace('.',','),m.origem]));
     d.emails.forEach(e=>linha('tEmails',[e.tipo,e.para,`<span class="pill ${e.enviado?'ok':'gratis'}">${e.enviado?'enviado':'log'}</span>`]));
-    (d.varreduras||[]).forEach(v=>linha('tVarreduras',[v.criado_em.slice(0,16)+' ('+v.fonte+')',v.placas_verificadas,v.novas_multas]));
+    (d.varreduras||[]).forEach(v=>linha('tVarreduras',[horaBR(v.criado_em)+' ('+v.fonte+')',v.placas_verificadas,v.novas_multas]));
   }catch(e){ erro.textContent = e.message || 'Falha ao carregar.'; erro.style.display='block'; }
 }
 async function rodarVarredura(){

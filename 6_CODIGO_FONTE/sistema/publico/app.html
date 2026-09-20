@@ -597,6 +597,29 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
 </div>
 
 <script>
+/* ===== Prazo em dias de calendário =====
+   Prazo de defesa é DIA, não instante. `new Date('2026-06-17')` é meia-noite
+   em UTC: no Brasil (UTC-3) a conta dava sempre um dia a menos, e a tela
+   mostrava "6d" enquanto o e-mail dizia "faltam 7 dias". Aqui as duas datas
+   viram dia civil local antes de subtrair. */
+function diasAte(iso){
+  if(!iso) return null;
+  const p = String(iso).slice(0,10).split('-').map(Number);
+  if(p.length !== 3 || !p[0]) return null;
+  const alvo = Date.UTC(p[0], p[1]-1, p[2]);
+  const h = new Date();
+  const hojeLocal = Date.UTC(h.getFullYear(), h.getMonth(), h.getDate());
+  return Math.round((alvo - hojeLocal) / 86400000);
+}
+function rotuloPrazo(iso){
+  const d = diasAte(iso);
+  if(d === null) return '—';
+  if(d < 0) return 'venceu';
+  if(d === 0) return 'hoje';
+  return d + 'd';
+}
+function dataBR(iso){ return iso ? String(iso).slice(0,10).split('-').reverse().join('/') : '—'; }
+
 /* Escapa texto antes de entrar em innerHTML. AIT, descrição e órgão vêm do OCR
    de um documento que o usuário envia — sem isto, um documento preparado
    injeta HTML na própria tela. Hoje o alcance é só a própria conta; vira
@@ -685,7 +708,7 @@ async function carregarDados(){
 function renderHome(){
   document.getElementById('hMultas').textContent = APP.multas.length || '0';
   const comPrazo = APP.multas.filter(x=>x.prazo_defesa).sort((a,b)=>a.prazo_defesa.localeCompare(b.prazo_defesa))[0];
-  document.getElementById('hPrazo').textContent = comPrazo ? Math.max(0, Math.round((new Date(comPrazo.prazo_defesa)-Date.now())/86400000)) + 'd' : '—';
+  document.getElementById('hPrazo').textContent = comPrazo ? rotuloPrazo(comPrazo.prazo_defesa) : '—';
   const c = document.getElementById('cardMulta');
   if(APP.multas.length){
     const m = APP.multas[0];

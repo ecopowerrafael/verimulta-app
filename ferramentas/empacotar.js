@@ -66,7 +66,7 @@ PARA VER O SISTEMA RODANDO NO SEU PC — 15 MINUTOS
      Aguarde terminar. So precisa na primeira vez.
 
   4. Digite:   npm test
-     Tem de aparecer "0 falha(s)" duas vezes. Sao 56 verificacoes
+     Tem de aparecer "0 falha(s)" duas vezes. Sao 72 verificacoes
      automaticas. Se alguma falhar, NAO suba o sistema: me chame.
 
   5. Digite:   $env:ADMIN_SECRET="MinhaChave2026"; node servidor.js

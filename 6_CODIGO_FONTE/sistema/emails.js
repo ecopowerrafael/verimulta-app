@@ -6,6 +6,7 @@
  */
 const nodemailer = require('nodemailer');
 const { db } = require('./banco');
+const { hoje, dataLocal, paraBR } = require('./datas');
 
 db.exec(`CREATE TABLE IF NOT EXISTS emails_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,7 +83,7 @@ async function enviar(tipo, usuario, extra = {}, chave_dedup = null) {
   const modelo = MODELOS[tipo];
   if (!modelo || !usuario || !usuario.email) return { ok: false };
   const { assunto, html } = modelo(usuario, extra);
-  const chave = chave_dedup || `${tipo}:${usuario.id}:${new Date().toISOString().slice(0, 10)}`;
+  const chave = chave_dedup || `${tipo}:${usuario.id}:${hoje()}`;   // dia civil do Brasil, não do servidor
   try {
     db.prepare('INSERT INTO emails_log (usuario_id,tipo,para,assunto,chave_dedup,enviado) VALUES (?,?,?,?,?,?)')
       .run(usuario.id, tipo, usuario.email, assunto, chave, SMTP_OK ? 1 : 0);
@@ -107,14 +108,17 @@ async function verificarPrazos() {
   const janelas = [7, 3, 1];
   let disparados = 0;
   for (const dias of janelas) {
-    const alvo = new Date(Date.now() + dias * 86400000).toISOString().slice(0, 10);
+    // Dia civil no fuso do motorista. Com toISOString() o servidor (UTC) já
+    // estava no dia seguinte a partir das 21h no Brasil, e o alerta de 7 dias
+    // procurava multas que vencem em 8 — o cliente não era avisado.
+    const alvo = dataLocal(dias);
     const linhas = db.prepare(`SELECT m.id, m.ait, m.descricao, m.prazo_defesa, u.id uid, u.nome, u.email
       FROM multas m JOIN usuarios u ON u.id = m.usuario_id
       WHERE m.prazo_defesa = ?`).all(alvo);
     for (const l of linhas) {
       const r = await enviar('alerta_prazo',
         { id: l.uid, nome: l.nome, email: l.email },
-        { dias, ait: l.ait, descricao: l.descricao, prazo: l.prazo_defesa.split('-').reverse().join('/') },
+        { dias, ait: l.ait, descricao: l.descricao, prazo: paraBR(l.prazo_defesa) },
         `alerta_prazo:${l.uid}:${l.id}:${dias}`);
       if (r.ok && !r.deduplicado) disparados++;
     }

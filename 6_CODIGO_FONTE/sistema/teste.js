@@ -94,5 +94,37 @@ ok(cfg.conferirSegredo('abc', 'abc') === true
    && cfg.conferirSegredo('abc', 'abd') === false
    && cfg.conferirSegredo('', 'abc') === false, 'conferirSegredo() compara corretamente');
 
+console.log('\n[9] Datas — prazo é dia de calendário, não instante');
+const D = require('./datas');
+ok(/^\d{4}-\d{2}-\d{2}$/.test(D.hoje()), `hoje() = ${D.hoje()} (AAAA-MM-DD)`);
+ok(D.diasAte(D.dataLocal(7)) === 7, 'diasAte(+7 dias) = 7');
+ok(D.diasAte(D.dataLocal(1)) === 1, 'diasAte(amanhã) = 1 — a tela não pode dizer 0 com 1 dia restando');
+ok(D.diasAte(D.hoje()) === 0, 'diasAte(hoje) = 0');
+ok(D.diasAte(D.dataLocal(-3)) === -3, 'prazo vencido devolve negativo');
+ok(D.diasAte(null) === null && D.diasAte('lixo') === null, 'data ausente ou inválida devolve null, nunca NaN');
+
+// O bug que motivou este módulo: às 21h30 no Brasil o servidor (UTC) já está no
+// dia seguinte, e o alerta de 7 dias passava a procurar o 8º dia — ninguém era avisado.
+const noite = new Date('2026-06-10T21:30:00-03:00').getTime();
+const tarde = new Date('2026-06-10T14:00:00-03:00').getTime();
+ok(D.dataLocal(7, noite) === D.dataLocal(7, tarde),
+   `alvo do alerta é o mesmo às 14h e às 21h30 (${D.dataLocal(7, noite)})`);
+ok(D.dataLocal(7, tarde) === '2026-06-17', 'e é o dia certo: 10/06 + 7 = 17/06');
+ok(D.dataLocal(0, noite) === '2026-06-10', 'às 21h30 do dia 10, "hoje" ainda é 10 (não 11)');
+ok(D.paraBR('2026-06-17') === '17/06/2026', 'paraBR formata para o leitor brasileiro');
+ok(D.carimboLocal('2026-09-20 23:29:10').startsWith('20/09/2026'),
+   `carimbo UTC do banco vira hora de Brasília (${D.carimboLocal('2026-09-20 23:29:10')})`);
+
+console.log('\n[10] O app e o e-mail contam os dias do mesmo jeito');
+const appHtml = fs.readFileSync('./publico/app.html', 'utf8');
+ok(/function diasAte/.test(appHtml) && /Date\.UTC\(p\[0\]/.test(appHtml),
+   'app.html usa dia civil local no contador de prazo');
+ok(!/Math\.round\(\(new Date\(comPrazo\.prazo_defesa\)-Date\.now\(\)\)/.test(appHtml),
+   'a conta antiga por instante (que dava um dia a menos) não voltou');
+ok(/require\('\.\/datas'\)/.test(fs.readFileSync('./emails.js', 'utf8')), 'emails.js usa o módulo de datas');
+ok(/require\('\.\/datas'\)/.test(fs.readFileSync('./monitor.js', 'utf8')), 'monitor.js usa o módulo de datas');
+ok(/Intl\.DateTimeFormat/.test(fs.readFileSync('./publico/admin.html', 'utf8')),
+   'admin.html converte o carimbo UTC do banco para a hora local');
+
 console.log(`\n=== ${falhas} falha(s) ===`);
 process.exit(falhas ? 1 : 0);

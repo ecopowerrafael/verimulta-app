@@ -215,6 +215,7 @@ async function handoffDesenvolvedor(arquivo) {
       ['`motor_auditoria.js`', 'As 14 verificações A1–A14 (CTB 280–282, CONTRAN 900/918/2022, INMETRO 158/2022) + jurimetria v2 com correlação e teto.', 'caso real: 30%'],
       ['`config.js`', 'Segredos obrigatórios em produção (aborta no boot sem eles) + comparação `timingSafeEqual`.', 'testado'],
       ['`seguranca.js`', 'Rate limit por IP (janela deslizante), CORS por allowlist e cabeçalhos de endurecimento.', 'testado'],
+      ['`datas.js`', 'Dia civil no fuso do motorista (`FUSO_HORARIO`, padrão America/Sao_Paulo). Prazo é dia de calendário: com UTC, das 21h em diante o alerta procurava o dia seguinte.', 'testado'],
       ['`pagamentos.js`', 'Mercado Pago: preapproval, webhook com HMAC + reconsulta de status, cancelamento em 1 toque.', 'ciclo validado'],
       ['`pdf.js`', 'Defesa Prévia e Extrato de Auditoria em PDF timbrado (pdfkit, sem dependência nativa).', 'testado'],
       ['`ocr.js`', 'Google Vision (quando há chave) + extrator de campos + tabela de pontuação do CTB.', 'testado'],
@@ -255,7 +256,7 @@ async function handoffDesenvolvedor(arquivo) {
   d.folha({ eyebrow: 'parte 3 · modelo de dados e ambiente', titulo: 'Tabelas e as chaves de ambiente' });
   d.cartoes([
     { titulo: 'Tabelas (banco.js)', corpo: '`usuarios` · `veiculos` · `multas` · `diagnosticos` · `recursos` · `assinaturas` · `pagamentos` · `emails_log` · `varreduras`.\n\nPKs inteiras, FKs indexadas, timestamps, migrations idempotentes. `usuarios` **guarda o consentimento**: flag, data, IP e versão do termo. Migração recomendada para Postgres no Gate 5.' },
-    { titulo: 'Environment', corpo: '`NODE_ENV` · `DB_PATH` · `JWT_SECRET` · `ADMIN_SECRET` · `WEBHOOK_SECRET` · `GATEWAY` · `MP_ACCESS_TOKEN` · `URL_BASE` · `SMTP_HOST/PORT/USER/PASS` · `EMAIL_FROM` · `GOOGLE_VISION_KEY` · `ORIGENS_PERMITIDAS` · `FONTES_MONITORAMENTO` · `VERSAO_TERMOS`.\n\n`DB_PATH` **tem de apontar para o disco persistente** (`/var/data`). `DEMO_NOVA_MULTA` jamais em produção.' },
+    { titulo: 'Environment', corpo: '`NODE_ENV` · `DB_PATH` · `JWT_SECRET` · `ADMIN_SECRET` · `WEBHOOK_SECRET` · `GATEWAY` · `MP_ACCESS_TOKEN` · `URL_BASE` · `SMTP_HOST/PORT/USER/PASS` · `EMAIL_FROM` · `GOOGLE_VISION_KEY` · `ORIGENS_PERMITIDAS` · `FONTES_MONITORAMENTO` · `VERSAO_TERMOS` · `FUSO_HORARIO`.\n\n`DB_PATH` **tem de apontar para o disco persistente** (`/var/data`). `DEMO_NOVA_MULTA` jamais em produção.' },
     { titulo: 'O motor (coração intocável)', corpo: 'A1–A14 com base legal citada item a item; cada regra determinística e versionável. **Jurimetria v2:** teses do mesmo equipamento (A4–A8) e da mesma cadeia de notificação (A3, A13, A14) são famílias correlacionadas — a mais forte conta inteira, as demais com decaimento de 0,30 — e o resultado tem **teto de 85%**. Toda mudança de regra = teste novo + registro da versão que produziu o resultado.' },
     { titulo: 'PWA', corpo: '`manifest.json` + `sw.js` prontos (instalável no Android/iOS pelo navegador). Ícones 192/512 na pasta. Caminho para a loja: PWABuilder » TWA (Google Play, US$ 25). Push notifications = Pacote B.' }
   ], 2, { y: d.y + 4, tamanhoCorpo: 9 });
