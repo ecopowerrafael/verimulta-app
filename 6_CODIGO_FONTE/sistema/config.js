@@ -26,7 +26,7 @@ if (faltando.length) {
   process.exit(1);
 }
 if (PRODUCAO && (process.env.GATEWAY || 'demo') === 'demo') {
-  console.warn('[atenção] GATEWAY=demo em produção: /v1/assinaturas/ativar continua liberado. Use GATEWAY=mercadopago para cobrar de verdade.');
+  console.warn('[atenção] GATEWAY=demo em produção: o checkout NÃO cobra de verdade — nenhuma assinatura será faturada. Defina GATEWAY=mercadopago e MP_ACCESS_TOKEN para vender. (A ativação direta já está bloqueada por NODE_ENV=production.)');
 }
 
 /** Comparação de segredo resistente a timing attack. */

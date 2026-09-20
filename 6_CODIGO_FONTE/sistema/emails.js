@@ -83,7 +83,15 @@ async function enviar(tipo, usuario, extra = {}, chave_dedup = null) {
   try {
     db.prepare('INSERT INTO emails_log (usuario_id,tipo,para,assunto,chave_dedup,enviado) VALUES (?,?,?,?,?,?)')
       .run(usuario.id, tipo, usuario.email, assunto, chave, SMTP_OK ? 1 : 0);
-  } catch (e) { return { ok: true, deduplicado: true }; }         // já enviado
+  } catch (e) {
+    // Só a violação do UNIQUE em chave_dedup significa "já enviado". Qualquer
+    // outro erro (banco em disco cheio, tabela travada) era engolido aqui como
+    // se fosse deduplicação, e a falha real nunca aparecia em lugar nenhum.
+    if (String(e.code || e.message).includes('SQLITE_CONSTRAINT'))
+      return { ok: true, deduplicado: true };
+    console.error('[emails] falha ao registrar envio:', e.message);
+    return { ok: false, erro: 'Falha ao registrar o envio.' };
+  }
   if (SMTP_OK) {
     try { await transporte.sendMail({ from: DE, to: usuario.email, subject: assunto, html }); }
     catch (e) { db.prepare('UPDATE emails_log SET enviado=0 WHERE chave_dedup=?').run(chave); return { ok: false, erro: String(e) }; }

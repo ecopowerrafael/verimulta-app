@@ -1,21 +1,75 @@
 # Verimulta — configuração 1-clique do Render (Blueprint)
+#
+# O que o Blueprint já resolve: NODE_ENV, os três segredos (gerados pelo próprio
+# Render) e o disco onde o banco vive. O que VOCÊ preenche no painel depois do
+# primeiro deploy está marcado com `sync: false` — o Render pergunta cada um.
 services:
   - type: web
     name: verimulta
     runtime: node
-    plan: free
+    plan: starter            # free hiberna e o webhook do Mercado Pago pode bater na porta fechada
     buildCommand: npm install
     startCommand: node servidor.js
+    healthCheckPath: /v1/saude
+    disk:
+      # SQLite em disco efêmero perde TUDO a cada deploy: usuários, multas,
+      # defesas e histórico de pagamento. O disco persistente é obrigatório.
+      name: dados
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       # NODE_ENV=production torna JWT_SECRET, WEBHOOK_SECRET e ADMIN_SECRET
-      # obrigatórios: sem eles o processo aborta no boot (ver config.js).
+      # obrigatórios (config.js aborta no boot sem eles) e desliga a ativação
+      # direta de plano em /v1/assinaturas/ativar.
       - key: NODE_ENV
         value: production
+      - key: DB_PATH
+        value: /var/data/verimulta.db
       - key: JWT_SECRET
-        generateValue: true
-      - key: WEBHOOK_SECRET
         generateValue: true
       - key: ADMIN_SECRET
         generateValue: true
+
+      # --- Mercado Pago -------------------------------------------------
+      # WEBHOOK_SECRET tem de ser a ASSINATURA SECRETA que o painel do Mercado
+      # Pago mostra ao salvar o webhook — não um valor inventado, senão toda
+      # notificação de pagamento é recusada com 401 e o plano nunca ativa.
+      # Webhook a cadastrar no MP: https://SEU-DOMINIO/v1/webhooks/mercadopago
       - key: GATEWAY
+        value: demo           # troque para "mercadopago" quando o token estiver no ar
+        sync: false
+      - key: MP_ACCESS_TOKEN
+        sync: false
+      - key: WEBHOOK_SECRET
+        sync: false
+      - key: URL_BASE
+        value: https://www.verimulta.com.br
+        sync: false
+
+      # --- E-mail transacional (Zoho ou Locaweb) ------------------------
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "465"
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: EMAIL_FROM
+        value: Verimulta <contato@verimulta.com.br>
+        sync: false
+
+      # --- OCR ----------------------------------------------------------
+      - key: GOOGLE_VISION_KEY
+        sync: false
+
+      # --- Borda --------------------------------------------------------
+      # Origens autorizadas a chamar a API de outro domínio (ex.: a vitrine no
+      # Netlify). Vazio = só mesma origem. Nunca "*" com rota autenticada.
+      - key: ORIGENS_PERMITIDAS
+        value: https://www.verimulta.com.br,https://verimulta.com.br
+        sync: false
+      - key: FONTES_MONITORAMENTO
         value: demo
+      # DEMO_NOVA_MULTA nunca entra aqui: a regra da casa é não inventar multa.

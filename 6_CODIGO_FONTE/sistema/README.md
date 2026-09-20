@@ -26,14 +26,34 @@ aborta no boot (`config.js`). Não existe segredo padrão no código.
 | `MP_ACCESS_TOKEN`, `URL_BASE` | se `GATEWAY=mercadopago` | credenciais do gateway |
 | `SMTP_HOST/PORT/USER/PASS`, `EMAIL_DE` | não | sem SMTP, e-mails só ficam registrados em `emails_log` |
 | `GOOGLE_VISION_KEY` | não | sem chave, o OCR devolve `null` e o fluxo segue com preenchimento manual |
-| `DB_PATH` | não | caminho do SQLite (padrão `./verimulta.db`) |
+| `DB_PATH` | **sim no Render** | caminho do SQLite. No Render tem de apontar para o disco persistente (`/var/data/verimulta.db`) — em disco efêmero, **cada deploy apaga todos os clientes** |
+| `ORIGENS_PERMITIDAS` | não | domínios autorizados a chamar a API de outra origem, separados por vírgula. Vazio = só mesma origem. **Nunca `*`** |
+| `VERSAO_TERMOS` | não | versão do termo gravada junto do consentimento (padrão `2026-09-20`) |
 
-⚠️ `GATEWAY=demo` em produção mantém `/v1/assinaturas/ativar` liberado (o boot avisa).
+⚠️ `GATEWAY=demo` em produção **não cobra**: o checkout responde em modo
+demonstração e nenhuma assinatura é faturada. A ativação direta
+(`/v1/assinaturas/ativar`) fica bloqueada por `NODE_ENV=production`,
+independentemente do gateway.
+
+## Testes
+```bash
+npm test          # 56 asserções: unitárias (teste.js) + integração HTTP (teste_api.js)
+npm run test:api  # só as rotas: funil, webhook, paywall, PDF, LGPD, rate limit
+```
 
 ## Tabela de planos
 `planos.js` é a **fonte única**: `servidor.js` (limites e paywall) e
 `pagamentos.js` (checkout) leem dela. Preço novo ou plano novo se altera ali —
 em um lugar só. `npm test` falha se o app oferecer um plano que o checkout não aceita.
+
+Grade oficial: `combo1` R$ 29,90 · `combo2` R$ 39,90 · `combo3` R$ 49,90 ·
+`empresa_start` R$ 89,90 · `empresa_pro` R$ 149,90 · `frota` sob proposta
+(R$ 11,90/veículo). As chaves antigas `individual` e `casal` continuam sendo
+reconhecidas por `ALIASES`, para não rebaixar quem já assinou.
+
+## Site do Netlify
+`site-netlify/` é **derivado** de `sistema/publico/`. Depois de mexer no site ou
+no app, rode `npm run netlify` (e `npm run netlify:conferir` para checar).
 
 ## Endpoints (v1)
 | Método | Rota | Descrição |
@@ -45,11 +65,19 @@ em um lugar só. `npm test` falha se o app oferecer um plano que o checkout não
 | GET | /v1/multas | Lista multas do usuário |
 | GET | /v1/multas/:id/diagnostico | Auditoria A1–A14 + jurimetria (grátis: probabilidade bloqueada) |
 | POST | /v1/recursos | Gera Defesa Prévia (exige assinatura — HTTP 402 sem plano) |
+| GET | /v1/recursos/:id/pdf | **Defesa Prévia em PDF timbrado**, gerada no servidor |
+| GET | /v1/multas/:id/extrato.pdf | **Extrato de Auditoria em PDF** — as 14 verificações com base legal |
 | POST | /v1/recursos/:id/desfecho | Registra deferido/indeferido (calibração) |
 | POST | /v1/jurimetria/avaliar | Avaliação avulsa de um conjunto de fatos |
 | GET | /v1/planos | Grade de planos |
 | POST | /v1/assinaturas/ativar | Ativa plano — **em produção, só via webhook do gateway** |
 | POST | /v1/assinaturas/cancelar | Cancela em 1 toque |
+| POST | /v1/webhooks/mercadopago | Webhook do gateway — **é este o endereço a cadastrar no Mercado Pago** |
+| POST | /v1/webhooks/pagamento | Mesmo webhook, endereço histórico (continua respondendo) |
+| GET | /v1/eu/dados | LGPD art. 18: exporta tudo o que a plataforma guarda do titular |
+| DELETE | /v1/eu/conta | LGPD art. 18, VI: anonimiza a conta (exige assinatura cancelada) |
+| GET | /v1/admin/resumo | Painel do Dono (header `x-admin-secret`) |
+| GET | /v1/saude | Health check usado pelo Render |
 
 ## Fluxo freemium implementado
 Cadastro grátis → cadastra multa → diagnóstico mostra OS VÍCIOS mas **probabilidade = null + paywall**
@@ -92,7 +120,7 @@ O ciclo do dinheiro já está pronto e testado: checkout → webhook assinado �
 1. Crie a conta em **mercadopago.com.br** (PJ quando tiver o CNPJ) e acesse
    **mercadopago.com/developers** → Suas integrações → Criar aplicação.
 2. Copie o **Access Token de produção** (APP_USR-...).
-3. No painel da aplicação → **Webhooks** → URL: `https://SEU-APP.onrender.com/v1/webhooks/pagamento`
+3. No painel da aplicação → **Webhooks** → URL: `https://SEU-DOMINIO/v1/webhooks/mercadopago`
    → eventos: *Planos e assinaturas* + *Pagamentos* → copie a **assinatura secreta**.
 4. No Render → Environment, defina:
    `GATEWAY=mercadopago` · `MP_ACCESS_TOKEN=...` · `WEBHOOK_SECRET=...` · `URL_BASE=https://SEU-APP.onrender.com`
@@ -100,9 +128,15 @@ O ciclo do dinheiro já está pronto e testado: checkout → webhook assinado �
    assinatura criptográfica, consulta o status REAL no gateway e só então ativa.
    Cancelamento no MP → webhook rebaixa para o plano grátis automaticamente.
 
+⚠️ `WEBHOOK_SECRET` tem de ser **a assinatura secreta que o painel do Mercado
+Pago mostra ao salvar o webhook** — não um valor inventado. Com um valor
+qualquer, toda notificação de pagamento é recusada com 401 e o cliente paga sem
+receber o plano.
+
 Segurança embutida: HMAC verificado com timingSafeEqual · estado sempre
 reconsultado na API do MP (nunca confia no payload) · ativação direta retorna
-403 fora do modo demo · toda movimentação auditada na tabela `pagamentos`.
+403 em produção (e fora do modo demo) · toda movimentação auditada na tabela
+`pagamentos`.
 
 Taxas de referência do MP (2026): PIX ~0,99% · cartão recorrente ~4,98%.
 Compare com Asaas/Stripe quando o volume crescer.

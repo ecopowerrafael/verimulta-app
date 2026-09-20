@@ -44,7 +44,28 @@ CREATE TABLE IF NOT EXISTS recursos (
 );
 CREATE INDEX IF NOT EXISTS ix_multa_user ON multas(usuario_id);
 CREATE INDEX IF NOT EXISTS ix_veic_user ON veiculos(usuario_id);
+CREATE INDEX IF NOT EXISTS ix_rec_user ON recursos(usuario_id);
+CREATE INDEX IF NOT EXISTS ix_diag_multa ON diagnosticos(multa_id);
 `);
+
+/**
+ * Migrações idempotentes — adicionam coluna só se ela ainda não existir.
+ * Bancos criados antes desta versão continuam abrindo normalmente.
+ */
+function migrarColuna(tabela, coluna, definicao) {
+  const existe = db.prepare(`PRAGMA table_info(${tabela})`).all().some(c => c.name === coluna);
+  if (!existe) db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${definicao}`);
+}
+
+// LGPD art. 8º §2º: o ônus de provar o consentimento é do controlador. A API
+// respondia "consentimento registrado" sem gravar nada em lugar nenhum.
+migrarColuna('usuarios', 'consentimento_lgpd', "INTEGER DEFAULT 0");
+migrarColuna('usuarios', 'consentimento_em',   "TEXT");
+migrarColuna('usuarios', 'consentimento_ip',   "TEXT");
+migrarColuna('usuarios', 'consentimento_versao', "TEXT");
+// Direito de eliminação (art. 18, VI): a conta é anonimizada, não apagada em
+// silêncio — os registros fiscais do pagamento precisam sobreviver.
+migrarColuna('usuarios', 'anonimizado_em', "TEXT");
 
 /** Gera o texto da Defesa Prévia a partir do diagnóstico. */
 function gerarDefesa({ usuario, multa, teses }) {
@@ -81,4 +102,4 @@ As probabilidades apresentadas no diagnóstico são estimativas; a decisão
 sobre a autuação é exclusiva do órgão julgador.`;
 }
 
-module.exports = { db, gerarDefesa };
+module.exports = { db, gerarDefesa, migrarColuna };

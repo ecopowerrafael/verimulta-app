@@ -28,16 +28,18 @@ const j2 = jurimetria(auditar({
   sinalizacao_ok: false, coordenadas_ok: false
 }));
 console.log(`         vícios=${j2.teses.length}  probabilidade=${j2.probabilidade}%  faixa=${j2.faixa}`);
-ok(j2.probabilidade <= 100, 'probabilidade ≤ 100');
-console.log(`         >> em aberto: ${j2.teses.length} teses correlatas (mesmo radar) compõem ${j2.probabilidade}%`);
+ok(j2.probabilidade <= 85, `probabilidade respeita o teto de 85% (veio ${j2.probabilidade}%)`);
+ok(j2.teto_aplicado === true, 'teto sinalizado quando a conta bruta passa de 85%');
+ok(j2.nota_correlacao.length > 0, 'nota de correlação presente (teses do mesmo radar contam uma vez)');
+ok(j2.indice === 'POSSÍVEL INCONSISTÊNCIA', `índice de consistência = ${j2.indice}`);
 
 console.log('\n[4] A3 — prazo de notificação');
 ok(auditar({ origem: 'agente', data_infracao: '2026-01-01', data_notificacao: '2026-03-01', campos_faltantes: [] })
    .find(x => x.codigo === 'A3').vicio === true, 'acusa atraso de 59 dias');
 const a3neg = auditar({ origem: 'agente', data_infracao: '2026-03-01', data_notificacao: '2026-01-01', campos_faltantes: [] })
    .find(x => x.codigo === 'A3');
-ok(a3neg.vicio === false, 'notificação ANTES da infração não é acusada');
-console.log(`         >> em aberto: emite "${a3neg.detalhe}"`);
+ok(a3neg.vicio === true, 'notificação ANTERIOR à infração é acusada como inconsistência');
+ok(/ANTERIOR/.test(a3neg.detalhe), 'detalhe explica a inversão de datas');
 
 console.log('\n[5] OCR — extrator de campos sobre notificação sintética');
 const doc = `PREFEITURA MUNICIPAL
@@ -69,9 +71,13 @@ const rejeitados = botoes.filter(p => P.PRECOS[p] === undefined);
 const orfaos = Object.keys(P.PRECOS).filter(p => !P.PLANOS[p]);
 ok(rejeitados.length === 0, `botões que o /v1/checkout rejeitaria: [${rejeitados.join(', ')}]`);
 ok(orfaos.length === 0, `preços sem plano correspondente: [${orfaos.join(', ')}]`);
-ok(P.PRECOS.individual === 29.90 && P.PRECOS.casal === 49.90, 'preços preservados (individual 29,90 · casal 49,90)');
+ok(P.PRECOS.combo1 === 29.90 && P.PRECOS.combo2 === 39.90 && P.PRECOS.combo3 === 49.90,
+   'grade oficial do manual (combo1 29,90 · combo2 39,90 · combo3 49,90)');
+ok(P.PRECOS.empresa_start === 89.90 && P.PRECOS.empresa_pro === 149.90, 'planos PJ preservados');
 ok(P.PRECOS.gratis === undefined && P.PRECOS.frota === undefined, 'grátis e frota fora do checkout de valor fixo');
-ok(P.planoDe('combo1').nome === 'Grátis', 'planoDe() com plano desconhecido cai no grátis em vez de estourar');
+ok(P.planoDe('xpto').nome === 'Grátis', 'plano desconhecido cai no grátis em vez de estourar');
+ok(P.planoDe('individual').nome === 'Combo 01' && P.precoDe('casal') === 49.90,
+   'assinante da grade antiga não é rebaixado (alias individual→combo1, casal→combo3)');
 
 console.log('\n[7] pagamentos.js lê a fonte única');
 const pg = fs.readFileSync('./pagamentos.js', 'utf8');

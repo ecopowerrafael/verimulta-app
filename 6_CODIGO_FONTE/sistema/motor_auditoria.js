@@ -54,10 +54,20 @@ function auditar(m) {
   let prazoVicio = false, prazoDet = 'Datas insuficientes para checagem automática.';
   if (m.data_infracao && m.data_notificacao) {
     const d = dif(m.data_notificacao, m.data_infracao);
-    prazoVicio = d > 30;
-    prazoDet = prazoVicio
-      ? `Notificação expedida ${d} dias após a infração (limite: 30).`
-      : `Notificação dentro do prazo (${d} dias).`;
+    if (Number.isNaN(d)) {
+      prazoDet = 'Datas em formato não reconhecido — confira no documento.';
+    } else if (d < 0) {
+      // Notificação anterior à infração é impossível: ou a data está errada no
+      // auto, ou foi lida errada do documento. Antes isto virava "dentro do
+      // prazo (-59 dias)" e passava batido.
+      prazoVicio = true;
+      prazoDet = `Inconsistência de datas: a notificação (${m.data_notificacao}) é ${Math.abs(d)} dias ANTERIOR à infração (${m.data_infracao}). Confira o documento — se confirmado, é vício do auto.`;
+    } else {
+      prazoVicio = d > 30;
+      prazoDet = prazoVicio
+        ? `Notificação expedida ${d} dias após a infração (limite: 30).`
+        : `Notificação dentro do prazo (${d} dias).`;
+    }
   }
   add('A3', true, prazoVicio, prazoDet);
 
@@ -99,19 +109,72 @@ function auditar(m) {
   return V;
 }
 
-/** Jurimetria v1: P(êxito) = 1 − ∏(1 − p_i) sobre os vícios encontrados. */
+/**
+ * Famílias de teses correlacionadas. Dentro de uma família as teses NÃO são
+ * independentes — A4 a A8 tratam todas do mesmo equipamento; A3, A13 e A14
+ * tratam todas da mesma cadeia de notificações. Tratá-las como independentes
+ * era o que fazia a conta chegar a 100% com um radar de seis vícios.
+ */
+const FAMILIAS = {
+  equipamento:  ['A4', 'A5', 'A6', 'A7', 'A8'],
+  notificacao:  ['A3', 'A13', 'A14']
+};
+/** Peso da 2ª, 3ª... tese dentro da MESMA família (a 1ª entra inteira). */
+const DECAIMENTO = 0.30;
+/** Teto da estimativa. Nenhum resultado é certo: 100% seria promessa. */
+const TETO = 0.85;
+
+function familiaDe(codigo) {
+  for (const [nome, membros] of Object.entries(FAMILIAS))
+    if (membros.includes(codigo)) return nome;
+  return `isolada:${codigo}`;      // cada tese sem família é o seu próprio grupo
+}
+
+/**
+ * Jurimetria v2: P(êxito) = 1 − ∏(1 − p_grupo), onde cada grupo de teses
+ * correlacionadas contribui uma vez, com as teses seguintes descontadas.
+ * Resultado sempre como ESTIMATIVA e limitado ao teto.
+ */
 function jurimetria(verificacoes) {
   const teses = verificacoes.filter(v => v.aplicavel && v.vicio)
     .map(v => ({ codigo: v.codigo, base_legal: v.base_legal, p: PRIORES[v.codigo], detalhe: v.detalhe }));
-  const prob = 1 - teses.reduce((acc, t) => acc * (1 - t.p), 1);
+
+  // Agrupa e combina dentro da família (a mais forte inteira, as demais descontadas).
+  const grupos = new Map();
+  for (const t of teses) {
+    const g = familiaDe(t.codigo);
+    if (!grupos.has(g)) grupos.set(g, []);
+    grupos.get(g).push(t.p);
+  }
+  let correlacionadas = false;
+  const pGrupos = [...grupos.values()].map(ps => {
+    if (ps.length > 1) correlacionadas = true;
+    const ordenadas = [...ps].sort((a, b) => b - a);
+    // 1 − ∏(1 − p_k · decaimento^k) com k começando em 0
+    return 1 - ordenadas.reduce((acc, p, k) => acc * (1 - p * Math.pow(DECAIMENTO, k)), 1);
+  });
+
+  const bruta = 1 - pGrupos.reduce((acc, p) => acc * (1 - p), 1);
+  const prob = Math.min(bruta, TETO);
   const pct = Math.round(prob * 100);
   const faixa = pct >= 70 ? 'alta' : pct >= 40 ? 'média' : pct > 0 ? 'baixa' : 'muito baixa';
+
+  // Manchete do resultado (Plano 7 Dias v2): o número é apoio, o índice é o título.
+  const indice = teses.length === 0 ? 'SEM INCONSISTÊNCIA'
+               : teses.length === 1 ? 'REQUER ATENÇÃO'
+               : 'POSSÍVEL INCONSISTÊNCIA';
+
   return {
+    indice,
     probabilidade: pct,
     faixa,
     teses,
-    disclaimer: 'Estimativa calculada a partir das verificações — nunca garantia. A decisão é do órgão julgador.'
+    teto_aplicado: bruta > TETO,
+    disclaimer: 'Estimativa calculada a partir das verificações — nunca garantia. A decisão é do órgão julgador.',
+    nota_correlacao: correlacionadas
+      ? 'Teses do mesmo equipamento ou da mesma cadeia de notificações são tratadas como correlacionadas: contam uma vez, com as demais descontadas.'
+      : ''
   };
 }
 
-module.exports = { auditar, jurimetria, PRIORES, BASES };
+module.exports = { auditar, jurimetria, PRIORES, BASES, FAMILIAS, TETO };

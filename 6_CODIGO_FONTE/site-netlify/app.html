@@ -214,7 +214,10 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
       <div><label>Placa do seu veículo</label><input id="cd-placa" placeholder="ABC1D23" style="text-transform:uppercase"></div>
       <div><label>Foto de perfil (opcional)</label><input id="cd-foto" type="file" accept="image/*"></div>
     </div>
-    <div class="aviso">Ao continuar, você concorda com os <a href="termos.html" target="_blank" style="color:#705D0E;text-decoration:underline">Termos de Uso</a> e autoriza o tratamento dos seus dados conforme a LGPD, para consultarmos as multas vinculadas ao seu CPF e placa. Biometria é opcional.</div>
+    <label class="aviso" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+      <input type="checkbox" id="cd-consent" style="margin-top:3px;flex:none;width:17px;height:17px;accent-color:#0B3C7E">
+      <span>Li e aceito os <a href="termos.html" target="_blank" style="color:#705D0E;text-decoration:underline">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" style="color:#705D0E;text-decoration:underline">Política de Privacidade</a>, e autorizo o tratamento dos meus dados conforme a LGPD para consultar as multas vinculadas ao meu CPF e placa. Biometria é opcional.</span>
+    </label>
     <button class="btn" onclick="fazerCadastro()">Criar conta e ver minhas multas</button>
   </div>
 </section>
@@ -486,16 +489,16 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
   <div class="miolo">
     <div class="cartao" style="border:2px solid var(--sinal);position:relative">
       <span class="pill pro" style="position:absolute;top:-11px;right:14px">MAIS ESCOLHIDO</span>
-      <h3>Individual · R$ 29,90/mês</h3>
-      <p class="cz">1 CNH + até 2 veículos do titular · auditoria completa · defesas ilimitadas · alertas 24h</p>
-      <button class="btn mini amarelo" style="margin-top:11px" onclick="assinar('individual','Individual')">Assinar e desbloquear</button>
+      <h3>Combo 01 · R$ 29,90/mês</h3>
+      <p class="cz">1 CNH + até 2 veículos do titular · auditoria completa · probabilidade · defesas ilimitadas · placas de terceiros · alertas 24h</p>
+      <button class="btn mini amarelo" style="margin-top:11px" onclick="assinar('combo1','Combo 01')">Assinar e desbloquear</button>
     </div>
-    <div class="cartao"><h3>Casal · R$ 49,90/mês</h3>
-      <p class="cz">2 CNHs + 3 veículos · a casa toda vigiada </p>
-      <button class="btn mini" style="margin-top:11px" onclick="assinar('casal','Casal')">Assinar Casal</button></div>
-    <div class="cartao"><h3>Casal · R$ 49,90/mês</h3>
-      <p class="cz">3 CNHs + 3 veículos · · a família toda vigiada</p>
-      <button class="btn mini" style="margin-top:11px" onclick="assinar('casal','Casal')">Assinar Casal</button></div>
+    <div class="cartao"><h3>Combo 02 · R$ 39,90/mês</h3>
+      <p class="cz">2 CNHs + 2 veículos · 1 dependente com o mesmo acesso · a casa toda vigiada</p>
+      <button class="btn mini" style="margin-top:11px" onclick="assinar('combo2','Combo 02')">Assinar Combo 02</button></div>
+    <div class="cartao"><h3>Combo 03 · R$ 49,90/mês</h3>
+      <p class="cz">3 CNHs + 3 veículos · 2 dependentes · a família toda vigiada</p>
+      <button class="btn mini" style="margin-top:11px" onclick="assinar('combo3','Combo 03')">Assinar Combo 03</button></div>
     <div class="cartao" style="background:linear-gradient(150deg,#071E42,#0B3C7E);border:none">
       <h3 style="color:#fff">Empresa Start · R$ 89,90/mês</h3>
       <p style="color:#B9C9E0;font-size:12.5px">CNPJ · até 5 veículos + 2 usuários · indicação de condutor no prazo (adeus multa em dobro) · painel de pontos por motorista</p>
@@ -594,6 +597,16 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
 </div>
 
 <script>
+/* Escapa texto antes de entrar em innerHTML. AIT, descrição e órgão vêm do OCR
+   de um documento que o usuário envia — sem isto, um documento preparado
+   injeta HTML na própria tela. Hoje o alcance é só a própria conta; vira
+   cross-user no dia em que o monitor ingerir dados de fonte externa. */
+function esc(v){
+  return String(v ?? '').replace(/[&<>"']/g, ch => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]
+  ));
+}
+
 /* ===== VERIMULTA — APP CONECTADO À API v1 ===== */
 window.VERIMULTA_API_URL = window.VERIMULTA_API_URL || '';  // vazio = mesma origem (Render). No Netlify: 'https://SEU-APP.onrender.com'
 const API = window.VERIMULTA_API_URL;
@@ -633,7 +646,10 @@ async function fazerCadastro(){
   if(!nome || !email || !senha){ toast('Preencha nome, e-mail e senha.'); return; }
   if(senha.length < 8){ toast('A senha precisa de pelo menos 8 caracteres.'); return; }
   toast('Criando sua conta…');
-  const r = await api('/v1/auth/register', { method:'POST', json:{ nome, cpf, email, senha } });
+  if(!document.getElementById('cd-consent').checked){
+    toast('Para criar a conta, aceite os Termos e a Política de Privacidade.'); return;
+  }
+  const r = await api('/v1/auth/register', { method:'POST', json:{ nome, cpf, email, senha, consentimento:true } });
   if(!r.ok){ toast(r.dados.erro || 'Falha no cadastro.'); return; }
   APP.token = r.dados.token; APP.nome = nome; APP.email = email; APP.cpf = cpf;
   APP.assinante = false; APP.plano = 'Grátis';
@@ -674,9 +690,9 @@ function renderHome(){
   if(APP.multas.length){
     const m = APP.multas[0];
     c.innerHTML = `<div class="cartao" style="border-left:4px solid var(--vicio)">
-      <div style="display:flex;justify-content:space-between;align-items:center"><span class="pill alerta">ENCONTRADA NO SEU CPF</span><span class="mono" style="font-size:11px;color:var(--cinza)">AIT ${m.ait||'—'}</span></div>
-      <h3 style="margin-top:10px">${m.descricao||'Autuação'} · ${APP.placa||''}</h3>
-      <div class="cz">R$ ${(m.valor||0).toFixed(2).replace('.',',')} · ${m.pontos||0} pontos · ${m.orgao||''} ${m.prazo_defesa? '· Defesa até <b>'+m.prazo_defesa.split('-').reverse().join('/')+'</b>':''}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="pill alerta">ENCONTRADA NO SEU CPF</span><span class="mono" style="font-size:11px;color:var(--cinza)">AIT ${esc(m.ait)||'—'}</span></div>
+      <h3 style="margin-top:10px">${esc(m.descricao)||'Autuação'} · ${esc(APP.placa)}</h3>
+      <div class="cz">R$ ${(m.valor||0).toFixed(2).replace('.',',')} · ${m.pontos||0} pontos · ${esc(m.orgao)} ${m.prazo_defesa? '· Defesa até <b>'+m.prazo_defesa.split('-').reverse().join('/')+'</b>':''}</div>
       <button class="btn mini amarelo" style="margin-top:13px" onclick="verDiagnostico(${m.id})">🔍 &nbsp;Ver a auditoria desta multa</button>
     </div>`;
   } else {
@@ -745,7 +761,7 @@ async function verDiagnostico(id){
   const naoAplic = d.verificacoes.length - aplicaveis.length;
   aplicaveis.forEach(v=>{
     L.insertAdjacentHTML('beforeend', `<div class="checkline ${v.vicio?'vicio':'ok'}">
-      <span class="ic">${v.vicio?'!':'✓'}</span><span class="cod">${v.codigo}</span>${v.detalhe}</div>`);
+      <span class="ic">${v.vicio?'!':'✓'}</span><span class="cod">${esc(v.codigo)}</span>${esc(v.detalhe)}</div>`);
   });
   if(naoAplic>0) L.insertAdjacentHTML('beforeend', `<div class="checkline ok"><span class="ic">✓</span><span class="cod">+${naoAplic}</span>Verificações de radar não aplicáveis (autuação por agente)</div>`);
   const pro = d.probabilidade !== null;
@@ -767,6 +783,7 @@ async function tentarDefesa(){
   const r = await api('/v1/recursos', { method:'POST', json:{ multa_id: APP.diag.id } });
   if(r.status === 402){ abrirPaywall('defesa'); return; }
   if(!r.ok){ toast(r.dados.erro || 'Falha ao gerar a defesa.'); return; }
+  APP.recursoId = r.dados.recurso_id;
   document.getElementById('defCard').textContent = r.dados.texto;
   go('t-defesa');
   toast('Defesa gerada pelo motor de auditoria ⚖️');
@@ -779,7 +796,24 @@ function protocolar(){
 }
 
 
-/* ===== Impressão em PDF (papel timbrado) ===== */
+/* ===== PDF ===== 
+   O servidor gera o documento timbrado (GET /v1/recursos/:id/pdf e
+   /v1/multas/:id/extrato.pdf): sai idêntico em qualquer aparelho e não depende
+   de pop-up liberado. A impressão pelo navegador fica como plano B. */
+async function baixarPDF(caminho, nomeArquivo){
+  try{
+    const r = await fetch(API + caminho, { headers: { 'Authorization': 'Bearer ' + APP.token } });
+    if(!r.ok) return false;
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nomeArquivo; document.body.appendChild(a); a.click();
+    a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ===== Impressão em PDF (papel timbrado) — plano B ===== */
 function abrirImpressao(titulo, corpoHtml){
   const w = window.open('', '_blank');
   if(!w){ toast('Permita pop-ups para gerar o PDF.'); return; }
@@ -801,13 +835,21 @@ function abrirImpressao(titulo, corpoHtml){
   <script>setTimeout(()=>window.print(), 400)</scr`+`ipt></body></html>`);
   w.document.close();
 }
-function imprimirDefesa(){
+async function imprimirDefesa(){
   const t = document.getElementById('defCard').textContent;
   if(!t.trim()){ toast('Gere a defesa primeiro.'); return; }
+  if(APP.recursoId){
+    toast('Gerando o PDF…');
+    if(await baixarPDF('/v1/recursos/'+APP.recursoId+'/pdf', 'defesa-previa-verimulta.pdf')) return;
+  }
   abrirImpressao('Defesa Prévia — Verimulta', '<h1>DEFESA PRÉVIA</h1><pre>'+t.replace(/</g,'&lt;')+'</pre>');
 }
-function imprimirExtrato(){
+async function imprimirExtrato(){
   if(!APP.diag){ toast('Abra um diagnóstico primeiro.'); return; }
+  if(APP.assinante){
+    toast('Gerando o PDF…');
+    if(await baixarPDF('/v1/multas/'+APP.diag.id+'/extrato.pdf', 'extrato-auditoria-verimulta.pdf')) return;
+  }
   const d = APP.diag;
   const linhas = d.verificacoes.map(v=>`<tr><td>${v.codigo}</td><td>${v.aplicavel?(v.vicio?'⚠️ VÍCIO':'✓ OK'):'—'}</td><td>${v.detalhe}</td><td>${v.base_legal}</td></tr>`).join('');
   const prob = d.probabilidade!==null ? d.probabilidade+'% ('+d.faixa+')' : 'disponível para assinantes';

@@ -36,11 +36,39 @@ function brValor(v) {
 }
 
 /** Pontuação por infração (CTB): gravíssima 7, grave 5, média 4, leve 3. Mapa mínimo por prefixo. */
+/**
+ * Pontuação por código de enquadramento (CTB art. 259, com a redação da Lei
+ * 14.071/2020): gravíssima 7 · grave 5 · média 4 · leve 3.
+ * Cobre os enquadramentos mais frequentes em autuação urbana e de radar.
+ * Código não listado devolve null — o app pede confirmação manual em vez de
+ * chutar, que é o comportamento correto para um número que vai na defesa.
+ */
+const PONTOS_CTB = {
+  // --- Velocidade (art. 218) ---
+  '7455': 4,   // até 20% acima do limite — média
+  '7463': 5,   // mais de 20% até 50% — grave
+  '7471': 7,   // mais de 50% acima do limite — gravíssima
+  // --- Avanço de sinal e parada (art. 208, 182, 181) ---
+  '6050': 7,   // avançar o sinal vermelho — gravíssima
+  '5185': 4,   // estacionar em desacordo com a regulamentação — média
+  '5541': 5,   // parar sobre a faixa de pedestres — grave
+  // --- Condutor e documentos (art. 162, 232, 230) ---
+  '5010': 7,   // dirigir sem habilitação — gravíssima
+  '6017': 5,   // conduzir sem portar documento de porte obrigatório — leve/grave conforme caso
+  '6521': 7,   // conduzir veículo com licenciamento vencido — gravíssima
+  // --- Segurança (art. 244, 252, 167) ---
+  '7366': 4,   // dirigir manuseando telefone celular — média (Lei 14.071/2020)
+  '5738': 5,   // dirigir com o braço fora do veículo — grave
+  '5169': 5,   // deixar de usar o cinto de segurança — grave
+  // --- Faixas e circulação (art. 184, 185, 186) ---
+  '5479': 4,   // transitar pela contramão em via de mão dupla — média
+  '6068': 7,   // transitar em faixa exclusiva — gravíssima
+  // --- Tolerância / preferência (art. 214) ---
+  '5231': 7    // deixar de dar preferência a pedestre — gravíssima
+};
+
 function pontosPorEnquadramento(cod) {
-  const gravissimas = ['7366', '5185', '5169', '7030', '7471'];  // celular=média? 7366 é média(4)? Não: usar tabela real
-  // Tabela objetiva mínima (expande com a base oficial):
-  const mapa = { '7366': 4, '7455': 4, '6050': 7, '5010': 7, '5738': 5, '5169': 5 };
-  return mapa[cod] ?? null;
+  return PONTOS_CTB[cod] ?? null;
 }
 
 /** Extrai os campos estruturados a partir do texto OCR/PDF da notificação. */
