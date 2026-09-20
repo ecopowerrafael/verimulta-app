@@ -5,7 +5,8 @@
   "description": "Gerador dos documentos operacionais do Verimulta em PDF",
   "scripts": {
     "docs": "node gerar-documentos.js",
-    "conferir": "node conferir.js"
+    "conferir": "node conferir.js",
+    "zip": "node empacotar.js"
   },
   "dependencies": {
     "pdfkit": "^0.20.2"

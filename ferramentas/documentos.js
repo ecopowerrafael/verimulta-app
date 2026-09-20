@@ -59,7 +59,7 @@ async function guiaDeAtivacao(arquivo) {
   d.folha({ eyebrow: 'etapa 1 · teste completo no seu pc (15 min)', titulo: 'Ligar o sistema antes de publicar' });
   d.passos([
     { titulo: '1. Instale o Node.js', corpo: '`nodejs.org` » baixe a versão **LTS** (22, 23 ou 24 servem) » instale com Avançar-Avançar-Concluir.' },
-    { titulo: '2. Abra a pasta do sistema no terminal', corpo: 'Entre em `6_CODIGO_FONTE/sistema` no Explorer » clique na barra de endereço » digite `powershell` e Enter.' },
+    { titulo: '2. Abra a pasta do sistema no terminal', corpo: 'Entre na pasta `sistema` no Explorer (no ZIP de instalação ela fica na raiz; no repositório, em `6_CODIGO_FONTE/`) » clique na barra de endereço » digite `powershell` e Enter.' },
     { titulo: '3. Instale as dependências (só na 1ª vez)', corpo: 'Digite `npm install` e aguarde terminar.' },
     { titulo: '4. Confira que está tudo são', corpo: 'Digite `npm test`. Devem passar **56 asserções, 0 falhas** — motor de auditoria, extrator de OCR, grade de planos e o funil inteiro por HTTP. Falhou alguma? Não suba: me chame com o print.' },
     { titulo: '5. Use o sistema', corpo: 'Digite `$env:ADMIN_SECRET="SuaChaveAqui"; node servidor.js` » abra `http://localhost:3000/app.html` (o app) e `http://localhost:3000/admin.html` (o painel, com a sua chave). Crie uma conta, escaneie a multa-exemplo, assine no modo demonstração e gere a defesa. **Tudo funcionando = pronto para o mundo.** Para desligar: Ctrl+C.' }
