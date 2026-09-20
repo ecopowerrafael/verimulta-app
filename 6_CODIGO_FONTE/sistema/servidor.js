@@ -1,4 +1,5 @@
-/** VERIMULTA — API v1 (MVP) · Node/Express · JWT · SQLite */
+/** VERIMULTA — API v1 · Node/Express · JWT · SQLite */
+require('./ambiente');   // carrega o .env local ANTES de qualquer módulo ler process.env
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
