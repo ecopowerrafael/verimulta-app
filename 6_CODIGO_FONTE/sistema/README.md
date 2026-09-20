@@ -24,7 +24,7 @@ aborta no boot (`config.js`). Não existe segredo padrão no código.
 | `WEBHOOK_SECRET` | sim (prod) | HMAC do webhook de pagamento |
 | `GATEWAY` | não | `demo` (padrão) ou `mercadopago` |
 | `MP_ACCESS_TOKEN`, `URL_BASE` | se `GATEWAY=mercadopago` | credenciais do gateway |
-| `SMTP_HOST/PORT/USER/PASS`, `EMAIL_DE` | não | sem SMTP, e-mails só ficam registrados em `emails_log` |
+| `SMTP_HOST/PORT/USER/PASS`, `EMAIL_FROM` | não | sem SMTP, e-mails só ficam registrados em `emails_log` |
 | `GOOGLE_VISION_KEY` | não | sem chave, o OCR devolve `null` e o fluxo segue com preenchimento manual |
 | `DB_PATH` | **sim no Render** | caminho do SQLite. No Render tem de apontar para o disco persistente (`/var/data/verimulta.db`) — em disco efêmero, **cada deploy apaga todos os clientes** |
 | `ORIGENS_PERMITIDAS` | não | domínios autorizados a chamar a API de outra origem, separados por vírgula. Vazio = só mesma origem. **Nunca `*`** |

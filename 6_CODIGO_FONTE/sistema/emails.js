@@ -1,7 +1,7 @@
 /**
  * VERIMULTA — E-mails transacionais + Alertas de prazo
  * Sem SMTP configurado → modo log (grava em emails_log, nada é enviado).
- * Produção: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_DE
+ * Produção: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM
  * (funciona com Zoho, Locaweb, Gmail/Workspace, Brevo, Resend-SMTP etc.)
  */
 const nodemailer = require('nodemailer');
@@ -21,7 +21,10 @@ const transporte = SMTP_OK ? nodemailer.createTransport({
   secure: process.env.SMTP_PORT === '465',
   auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
 }) : null;
-const DE = process.env.EMAIL_DE || 'Verimulta <contato@verimulta.com.br>';
+// Os manuais de ativação sempre disseram EMAIL_FROM; o código lia EMAIL_DE.
+// Quem seguisse o manual configurava uma variável que ninguém lia, e o
+// remetente caía no padrão. Aceita as duas, com EMAIL_FROM na frente.
+const DE = process.env.EMAIL_FROM || process.env.EMAIL_DE || 'Verimulta <contato@verimulta.com.br>';
 
 function moldura(titulo, corpo, cta) {
   return `<!doctype html><body style="margin:0;background:#F2F4F1;font-family:Arial,sans-serif">
