@@ -13,11 +13,21 @@ const { caracteresPerdidos, avisosDeMarcacao } = require('./deck');
 const DESTINO = path.join(__dirname, '..', '3_DOCUMENTACAO_PROJETO', 'manuais');
 
 const LISTA = [
-  ['Verimulta_Plano_de_Ativacao.pdf', docs.planoDeAtivacao],
-  ['Verimulta_Manual_Instalacao.pdf', docs.manualInstalacao],
-  ['Verimulta_Do_Zero_Ao_Ar.pdf', docs.doZeroAoAr],
+  ['Verimulta_Guia_de_Ativacao.pdf', docs.guiaDeAtivacao],
   ['Verimulta_Handoff_Desenvolvedor.pdf', docs.handoffDesenvolvedor],
   ['Verimulta_Cronograma_GoLive.pdf', docs.cronogramaGoLive]
+];
+
+/**
+ * Manuais que deixaram de existir: os três explicavam o MESMO caminho para
+ * leitores diferentes e foi assim que divergiram entre si e do código.
+ * Agora são um só — e o arquivo antigo é apagado para ninguém seguir a versão
+ * velha por engano.
+ */
+const APOSENTADOS = [
+  'Verimulta_Plano_de_Ativacao.pdf',
+  'Verimulta_Manual_Instalacao.pdf',
+  'Verimulta_Do_Zero_Ao_Ar.pdf'
 ];
 
 (async () => {
@@ -30,6 +40,12 @@ const LISTA = [
     if (r.transbordos.length) transbordos += r.transbordos.length;
     console.log(`  ${nome.padEnd(38)} ${String(r.paginas).padStart(2)} págs · ${(r.bytes / 1024).toFixed(0)} KB${aviso}`);
   }
+  const fs = require('fs');
+  for (const velho of APOSENTADOS) {
+    const caminho = path.join(DESTINO, velho);
+    if (fs.existsSync(caminho)) { fs.unlinkSync(caminho); console.log(`  (removido: ${velho} — consolidado no Guia de Ativação)`); }
+  }
+
   const aninhados = avisosDeMarcacao();
   if (aninhados.length) {
     console.log('\n  ATENÇÃO: marcação aninhada (sairia com as crases à mostra):');

@@ -12,57 +12,109 @@ const RODAPE = `PRIMECORP BROKERS — CONSULTORIA E INTERMEDIAÇÃO DE NEGÓCIOS
 const WEBHOOK = 'https://www.verimulta.com.br/v1/webhooks/mercadopago';
 
 // ---------------------------------------------------------------- 1
-async function planoDeAtivacao(arquivo) {
+/**
+ * O guia único de ativação.
+ *
+ * Substitui os três manuais que explicavam o MESMO caminho (Plano de Ativação,
+ * Manual de Instalação e Do Zero ao Ar) para leitores diferentes. Manter três
+ * versões do mesmo procedimento foi o que permitiu que elas divergissem entre
+ * si e do código — uma mandava cadastrar um webhook que respondia 404, outra
+ * vendia um plano que o checkout recusava.
+ */
+async function guiaDeAtivacao(arquivo) {
   const d = new Deck({ arquivo, rodape: RODAPE });
 
   d.capa({
-    eyebrow: 'plano de ativação · do seu dell ao primeiro pagamento',
-    titulo: ['Ligar o Verimulta', '~e Começar a Vender'],
-    subtitulo: 'O caminho completo em 7 fases, escrito para **VOCÊ** executar sozinho: teste no PC, servidor no ar, domínio, dinheiro entrando pelo Mercado Pago, e-mails, conferência final e a largada das vendas. Com o Rascunho de Chaves para anotar cada valor no lugar certo.'
+    eyebrow: 'guia de ativação · do zero ao primeiro pagamento',
+    titulo: ['Ligar o Verimulta', '~e começar a vender'],
+    subtitulo: 'Um documento só, na ordem exata: teste no seu PC » servidor no ar » domínio » dinheiro » e-mail » OCR » teste de fogo » homologação. Escrito para **você** executar sozinho; ao fim dele o cliente paga e recebe o acesso sem você tocar em nada.'
   });
 
-  d.folha({ eyebrow: 'antes de tudo · as duas dúvidas de sempre', titulo: '"Failed to fetch" e a Chave do Administrador' });
-  d.faixa('**O diagnóstico:** o Painel do Dono (`admin.html`) precisa conversar com a API. Se você abrir o arquivo com um duplo clique, sem servidor rodando, ele diz "Failed to fetch". **Nada está quebrado** — falta ligar o motor (Fase 1 ou Fase 2).');
+  d.folha({ eyebrow: 'o mapa · como as peças se encaixam', titulo: 'Quem faz o quê (honestidade técnica)' });
   d.cartoes([
-    { titulo: 'A Chave do Administrador', corpo: 'É a variável `ADMIN_SECRET`. **No Render você não precisa inventar nada:** o Blueprint gera um valor aleatório sozinho — copie em Environment quando quiser entrar no painel. Rodando no seu PC, você define a chave na hora de ligar o servidor. Não existe chave de fábrica, e isso é segurança.' },
-    { titulo: 'Por que o sistema aborta sem as chaves', corpo: 'Com `NODE_ENV=production`, o servidor **se recusa a subir** sem `JWT_SECRET`, `ADMIN_SECRET` e `WEBHOOK_SECRET`, e diz no log quais faltam. É proposital: um deploy silenciosamente inseguro é pior que um deploy que não sobe.' }
-  ], 2, { y: d.y + 4 });
-  d.nota('Quer ver o painel funcionando agora, no seu Dell? Fase 1 — 15 minutos.');
+    { titulo: 'O provedor do domínio — a casa do nome', corpo: 'Guarda `verimulta.com.br` e a Zona DNS. Opcionalmente hospeda o e-mail `contato@verimulta.com.br`. **Por que não o sistema inteiro aqui?** Hospedagem de site comum não executa Node.js — e o nosso motor é Node.' },
+    { titulo: 'Render — a casa do motor', corpo: 'O **sistema completo** (site + app + API + painel + webhook) roda aqui, com deploy de 1 clique pelo `render.yaml`. O domínio apenas **aponta** para ele: o cliente só vê `www.verimulta.com.br` e nunca sabe onde mora o motor.', destaque: true }
+  ], 2, { y: d.y + 2 });
+  d.tabela({
+    colunas: ['Endereço', 'Aponta para', 'Onde se configura'],
+    larguras: [1.1, 1.05, 1.65],
+    tamanho: 9,
+    respiro: 12,
+    linhas: [
+      ['`www.verimulta.com.br`', 'Render (sistema completo)', 'Zona DNS » registro **CNAME** `www` » [destino do Render]'],
+      ['`verimulta.com.br` (raiz)', 'Redirect para `www`', 'Painel do provedor » Redirecionamento de domínio'],
+      ['`contato@verimulta.com.br`', 'Zoho Mail (ou o provedor)', 'Criar a caixa + **senha de aplicativo** para o SMTP']
+    ],
+    y: d.y + 8
+  });
+  d.nota('Custo de operação: Render Starter **US$ 7/mês** + domínio. O plano Free hiberna, e um serviço hibernado pode perder a notificação de pagamento do Mercado Pago.');
 
-  d.folha({ eyebrow: 'fase 1 · teste completo no seu pc (15 min)', titulo: 'Ligar o sistema no Dell' });
+  d.folha({ eyebrow: 'antes de começar · as duas dúvidas de sempre', titulo: '"Failed to fetch" e a Chave do Administrador' });
+  d.faixa('**O diagnóstico:** o Painel do Dono (`admin.html`) precisa conversar com a API. Abrindo o arquivo com um duplo clique, sem servidor rodando, ele diz "Failed to fetch". **Nada está quebrado** — falta ligar o motor (Etapa 1 ou Etapa 2).');
+  d.cartoes([
+    { titulo: 'A Chave do Administrador', corpo: 'É a variável `ADMIN_SECRET`. **No Render você não inventa nada:** o Blueprint gera um valor aleatório — copie em Environment quando for entrar no painel. Rodando no seu PC, você define a chave ao ligar o servidor. Não existe chave de fábrica, e isso é segurança.' },
+    { titulo: 'Por que o sistema se recusa a subir', corpo: 'Com `NODE_ENV=production`, o servidor **aborta no boot** se faltar `JWT_SECRET`, `ADMIN_SECRET` ou `WEBHOOK_SECRET`, dizendo no log quais. É proposital: um deploy silenciosamente inseguro é pior que um deploy que não sobe.' }
+  ], 2, { y: d.y + 2 });
+
+  d.folha({ eyebrow: 'etapa 1 · teste completo no seu pc (15 min)', titulo: 'Ligar o sistema antes de publicar' });
   d.passos([
     { titulo: '1. Instale o Node.js', corpo: '`nodejs.org` » baixe a versão **LTS** (22, 23 ou 24 servem) » instale com Avançar-Avançar-Concluir.' },
     { titulo: '2. Abra a pasta do sistema no terminal', corpo: 'Entre em `6_CODIGO_FONTE/sistema` no Explorer » clique na barra de endereço » digite `powershell` e Enter.' },
     { titulo: '3. Instale as dependências (só na 1ª vez)', corpo: 'Digite `npm install` e aguarde terminar.' },
-    { titulo: '4. Confira que está tudo são', corpo: 'Digite `npm test`. Devem passar **56 asserções, 0 falhas** — motor de auditoria, extrator de OCR, grade de planos e o funil inteiro por HTTP. Se falhar alguma, não suba: me chame com o print.' },
-    { titulo: '5. Ligue o servidor e use o sistema', corpo: 'Digite `$env:ADMIN_SECRET="SuaChaveAqui"; node servidor.js` » abra `http://localhost:3000/app.html` (o app) e `http://localhost:3000/admin.html` (o painel, com a chave que você criou). Crie uma conta, escaneie a multa-exemplo, assine no modo demonstração e gere a defesa. **Tudo funcionando = pronto para o mundo.** Para desligar: Ctrl+C.' }
+    { titulo: '4. Confira que está tudo são', corpo: 'Digite `npm test`. Devem passar **56 asserções, 0 falhas** — motor de auditoria, extrator de OCR, grade de planos e o funil inteiro por HTTP. Falhou alguma? Não suba: me chame com o print.' },
+    { titulo: '5. Use o sistema', corpo: 'Digite `$env:ADMIN_SECRET="SuaChaveAqui"; node servidor.js` » abra `http://localhost:3000/app.html` (o app) e `http://localhost:3000/admin.html` (o painel, com a sua chave). Crie uma conta, escaneie a multa-exemplo, assine no modo demonstração e gere a defesa. **Tudo funcionando = pronto para o mundo.** Para desligar: Ctrl+C.' }
   ], { y: d.y + 2, tamanhoCorpo: 9.5 });
 
-  d.folha({ eyebrow: 'fase 2 · servidor no ar (render.com · ~40 min)', titulo: 'Colocar na internet de verdade' });
+  d.folha({ eyebrow: 'etapa 2 · o motor na nuvem (github + render · 35 min)', titulo: 'Colocar na internet de verdade' });
   d.passos([
-    { titulo: '1. GitHub', corpo: '`github.com` » Sign up » **New repository** `verimulta` (**Private**) » "uploading an existing file" » arraste **o conteúdo** da pasta `sistema` (o `servidor.js` tem de ficar na raiz) » Commit.' },
-    { titulo: '2. Render », Blueprint', corpo: '`render.com` » Sign up with GitHub » **New +** » **Blueprint** » repositório `verimulta` » **Apply**. O `render.yaml` monta o serviço, cria o **disco persistente** e gera `JWT_SECRET` e `ADMIN_SECRET` sozinho.' },
-    { titulo: '3. O disco é obrigatório — confira', corpo: 'Em **Settings » Disks** tem de existir um disco montado em `/var/data`, e em Environment `DB_PATH` = `/var/data/verimulta.db`. **Sem isso, cada novo deploy apaga todos os usuários, multas, defesas e o histórico de pagamento.** O Blueprint já faz; confira mesmo assim.', cor: COR.alerta },
-    { titulo: '4. Prova de vida', corpo: 'Espere o deploy ficar **Live** (bolinha verde) » abra `verimulta.onrender.com/app.html` no celular. Sistema na internet.' },
-    { titulo: '5. Domínio próprio', corpo: 'Render » **Settings » Custom Domains** » adicione `www.verimulta.com.br` » copie o destino CNAME. No provedor do domínio (Registro.br ou Locaweb) » Editar Zona DNS » registro **CNAME** `www` apontando para o destino » salvar. O cadeado (SSL) ativa sozinho em até 1h.' }
+    { titulo: '1. GitHub', corpo: '`github.com` » conta com o e-mail da empresa » **New repository** `verimulta` (**Private**) » "uploading an existing file" » arraste **o conteúdo** da pasta `sistema` (o `servidor.js` tem de ficar na raiz) » **Commit changes**.' },
+    { titulo: '2. Render » Blueprint', corpo: '`render.com` » Sign up with GitHub » **New + » Blueprint** » repositório `verimulta` » **Apply**. O `render.yaml` monta o serviço, cria o disco e gera `JWT_SECRET` e `ADMIN_SECRET` sozinho.' },
+    { titulo: '3. Confira o disco ANTES de seguir', corpo: '**Settings » Disks**: tem de existir um disco de 1 GB montado em `/var/data`, e `DB_PATH` = `/var/data/verimulta.db` em Environment. **Sem o disco, cada novo deploy apaga todos os usuários, multas, defesas e o histórico de pagamento.** O Blueprint já faz; confira mesmo assim.', cor: COR.alerta },
+    { titulo: '4. Prova de vida', corpo: 'Espere o deploy ficar **Live** (bolinha verde) » abra `verimulta.onrender.com/app.html` no celular. Sistema na internet. Agora vamos dar o nome dele.' }
   ], { y: d.y + 2, tamanhoCorpo: 9.5 });
-  d.nota('Plano do Render: **Starter (US$ 7/mês)** desde o beta pago. O Free hiberna, e um serviço hibernado pode perder a notificação de pagamento do Mercado Pago.');
+  d.nota('O repositório privado protege o código. A `.gitignore` já impede que banco, `node_modules` e segredos subam junto.');
 
-  d.folha({ eyebrow: 'fase 3 · o dinheiro (mercado pago · ~30 min)', titulo: 'Cliente paga » acesso libera sozinho' });
+  d.folha({ eyebrow: 'etapa 3 · o nome oficial (15 min + propagação)', titulo: 'www.verimulta.com.br apontando para o motor' });
   d.passos([
-    { titulo: '1. Conta PJ', corpo: '`mercadopago.com.br` » criar conta com o CNPJ da PrimeCorp (**55.745.297/0001-06**) » validar documentos e cadastrar a conta bancária de saque.' },
-    { titulo: '2. Credencial de produção', corpo: '`mercadopago.com.br/developers` » Suas integrações » Criar aplicação "Verimulta" » **Credenciais de produção** » copie o **Access Token** (`APP_USR-...`) » no Render: `MP_ACCESS_TOKEN` = o token e `GATEWAY` = `mercadopago`.' },
-    { titulo: '3. Webhook — o endereço exato', corpo: `Na aplicação » **Webhooks** » modo Produção » URL: \`${WEBHOOK}\` » eventos de **Pagamentos** e **Assinaturas (preapproval)** » Salvar » copie a **assinatura secreta** » no Render: \`WEBHOOK_SECRET\` = essa assinatura.` },
-    { titulo: '4. O teste de fogo', corpo: 'Assine você mesmo o **Combo 01 (R$ 29,90)** com o seu cartão » o badge vira **PLANO ATIVO** em até 1 minuto » confira o pagamento na trilha do Painel do Dono » cancele em 1 toque. **Ciclo validado nos dois sentidos = caixa aberto.**' }
-  ], { y: d.y + 2, tamanhoCorpo: 9.5 });
-  d.faixa('`WEBHOOK_SECRET` tem de ser **a assinatura secreta que o painel do Mercado Pago mostra**, não um valor inventado. Com um valor qualquer, toda notificação é recusada com 401: o cliente paga e o plano nunca libera — sem erro visível em lugar nenhum.', { y: d.y + 2, cor: COR.alerta, fundo: '#FDECEA' });
+    { titulo: '1. No Render', corpo: 'Serviço » **Settings » Custom Domains** » Add `www.verimulta.com.br` » copie o destino CNAME que ele mostrar (algo como `verimulta.onrender.com`).' },
+    { titulo: '2. Na Zona DNS do domínio', corpo: 'Painel do provedor » Domínios » `verimulta.com.br` » **Zona DNS / Editar DNS** » novo registro: Tipo **CNAME** · Nome `www` · Valor = o destino copiado » Salvar.' },
+    { titulo: '3. Raiz redirecionando', corpo: 'Redirecionamento: `verimulta.com.br` » `https://www.verimulta.com.br`, para quem digitar sem `www` também chegar.' },
+    { titulo: '4. Aguarde e confira', corpo: 'Propagação de 1 a 4 horas (24h no pior caso). Teste `www.verimulta.com.br` abrindo **com o cadeado** (SSL automático do Render). Por fim, ajuste `URL_BASE` no Render para o domínio final.' }
+  ], { y: d.y + 6 });
 
-  d.folha({ eyebrow: 'fases 4, 5 e 6 · e-mail, ocr e a conferência final', titulo: 'Os últimos parafusos' });
+  d.folha({ eyebrow: 'etapa 4 · o caixa (mercado pago · 30 min)', titulo: 'Cliente paga » acesso libera sozinho' });
   d.passos([
-    { titulo: 'Fase 4 · E-mail oficial (Zoho grátis ou Locaweb · 20 min)', corpo: '`zoho.com/mail` » plano Forever Free » adicionar o domínio » cadastrar os registros TXT/MX na Zona DNS » criar `contato@verimulta.com.br` » gerar **senha de aplicativo** » no Render: `SMTP_HOST`=`smtp.zoho.com`, `SMTP_PORT`=`465`, `SMTP_USER`, `SMTP_PASS` e `EMAIL_FROM`=`Verimulta <contato@verimulta.com.br>`. Teste: crie uma conta no app e veja o e-mail de boas-vindas chegar.' },
-    { titulo: 'Fase 5 · OCR das fotos (Google Vision · 15 min)', corpo: '`console.cloud.google.com` » novo projeto "verimulta" » ativar a **Cloud Vision API** » Credenciais » Criar chave de API » no Render: `GOOGLE_VISION_KEY`. São 1.000 leituras/mês grátis — sobra para o beta. Sem a chave, o app segue funcionando com preenchimento manual.' },
-    { titulo: 'Fase 6 · Conferência de fumaça (10 min)', corpo: '(1) site abre no domínio com cadeado · (2) cadastro **exige o aceite** dos Termos e dispara e-mail · (3) scan lê a foto · (4) paywall trava a probabilidade no grátis · (5) pagamento real ativa o plano em < 1 min · (6) Defesa e Extrato saem em **PDF timbrado** · (7) painel mostra o MRR certo · (8) Termos e Privacidade abrem · (9) contador confirmou CNAE + NFS-e · (10) advogado carimbou os Termos. **10 de 10 = pode vender.**' }
+    { titulo: '1. Conta PJ', corpo: '`mercadopago.com.br` » criar conta com o CNPJ **55.745.297/0001-06** (PrimeCorp Brokers) » validar documentos » cadastrar a conta bancária de saque.' },
+    { titulo: '2. Credencial de produção', corpo: '`mercadopago.com.br/developers` » **Suas integrações » Criar aplicação** » nome "Verimulta" » modelo **Pagamentos on-line / Assinaturas** » **Credenciais de produção** » copie o **Access Token** (`APP_USR-...`) » no Render: `GATEWAY`=`mercadopago` e `MP_ACCESS_TOKEN`= o token.' },
+    { titulo: '3. Webhook — o endereço exato', corpo: `Na aplicação » **Webhooks / Notificações** » modo Produção » URL: \`${WEBHOOK}\` » marque **Pagamentos** e **Assinaturas (preapproval)** » Salvar » copie a **Assinatura secreta** » no Render: \`WEBHOOK_SECRET\` = essa assinatura. Salvou = redeploy automático.` }
   ], { y: d.y + 2, tamanhoCorpo: 9.5 });
+  d.faixa('Dois detalhes que custam vendas se passarem batido. **(a)** O endereço termina em `/v1/webhooks/mercadopago` — confira caractere por caractere: endereço errado devolve 404, o MP reenfileira em silêncio e o cliente paga sem receber o plano. **(b)** `WEBHOOK_SECRET` é **a assinatura que o painel do MP mostra**, não um valor inventado: com um valor qualquer, toda notificação é recusada com 401 e o sintoma é exatamente o mesmo.', { y: d.y + 2, cor: COR.alerta, fundo: '#FDECEA' });
+
+  d.folha({ eyebrow: 'etapa 4 · como a entrega de acesso funciona', titulo: 'O ciclo automático e a grade de planos' });
+  d.faixa('**Em 6 batidas:** (1) o cliente toca "Assinar" » (2) o servidor cria a assinatura recorrente no MP e o cliente paga no checkout » (3) o MP dispara o webhook » (4) o servidor **valida a assinatura criptográfica** e **reconsulta o status real** no MP » (5) aprovado = o plano grava no usuário e os limites liberam na hora » (6) o e-mail de confirmação dispara e o Painel do Dono soma o MRR. **Zero toque seu.**');
+  d.tabela({
+    colunas: ['Plano pago', 'O que libera automaticamente'],
+    larguras: [0.8, 3],
+    tamanho: 9,
+    respiro: 12,
+    linhas: [
+      ['`combo1` · **R$ 29,90**', '1 CNH + 2 veículos · auditoria completa · probabilidade · defesas ilimitadas · placas de terceiros'],
+      ['`combo2` · **R$ 39,90**', '2 CNHs + 2 veículos (+1 dependente com o mesmo acesso)'],
+      ['`combo3` · **R$ 49,90**', '3 CNHs + 3 veículos (+2 dependentes)'],
+      ['`empresa_start` · **R$ 89,90**', 'CNPJ · 5 veículos + 2 usuários · indicação de condutor · pontos por motorista'],
+      ['`empresa_pro` · **R$ 149,90**', '15 veículos + 5 usuários · relatórios gerenciais'],
+      ['`frota` · sob proposta', 'R$ 11,90/veículo, degressivo — ative via contato comercial']
+    ],
+    y: d.y + 2
+  });
+  d.nota('Cancelou no app = o servidor cancela a recorrência no MP na hora. Pagamento recusado ou atrasado **não** ativa: o webhook só libera com status aprovado. Trilha completa de cada pagamento no Painel do Dono.');
+
+  d.folha({ eyebrow: 'etapas 5 e 6 · e-mail e ocr (35 min)', titulo: 'As últimas duas chaves' });
+  d.passos([
+    { titulo: '5. E-mail `contato@verimulta.com.br` (Zoho grátis · 20 min)', corpo: '`zoho.com/mail` » **Forever Free** » adicionar o domínio » o Zoho mostra 2 registros (TXT de verificação + MX) » cadastre ambos na Zona DNS » crie a caixa `contato@` » em Segurança, gere uma **Senha de aplicativo** » no Render: `SMTP_HOST`=`smtp.zoho.com` · `SMTP_PORT`=`465` · `SMTP_USER`=`contato@verimulta.com.br` · `SMTP_PASS`=[senha de app] · `EMAIL_FROM`=`Verimulta <contato@verimulta.com.br>`. Teste: crie uma conta no app e veja o e-mail de boas-vindas chegar.' },
+    { titulo: '6. OCR das fotos (Google Vision · 15 min)', corpo: '`console.cloud.google.com` » novo projeto "verimulta" » APIs e serviços » Biblioteca » **Cloud Vision API » Ativar** » Credenciais » Criar credencial » **Chave de API** » no Render: `GOOGLE_VISION_KEY`. São 1.000 leituras/mês grátis. **Sem a chave o app não quebra** — segue com preenchimento manual.' },
+    { titulo: 'Monitoramento em produção', corpo: '`FONTES_MONITORAMENTO`=`demo` e **jamais** defina `DEMO_NOVA_MULTA` em produção — a regra da casa é nunca inventar multa. Os alertas de prazo funcionam desde o dia 1; a varredura de novos débitos expande com os convênios oficiais.', cor: COR.alerta }
+  ], { y: d.y + 4 });
 
   d.folha({ eyebrow: 'o rascunho de chaves · imprima e preencha', titulo: 'Todas as variáveis num lugar só' });
   d.tabela({
@@ -90,160 +142,13 @@ async function planoDeAtivacao(arquivo) {
   });
   d.nota('Guarde este papel como guarda a senha do banco. `DEMO_NOVA_MULTA` **nunca entra em produção** — a regra da casa é não inventar multa.');
 
-  d.capa({
-    fecho: true,
-    eyebrow: 'fase 7 · vender',
-    titulo: ['Sistema no ar + caixa aberto =', 'beta de 20 » Instagram no ritmo »', '~R$ 35/dia » Dia D com oferta de fundador.'],
-    subtitulo: 'Tudo o que essa página resume já está pronto nas outras pastas: feed de 37 posts, campanhas, projeções e cronograma. Você liga as chaves — o resto já foi construído. Chegou quem verifica.'
-  });
-  return d.gravar();
-}
-
-// ---------------------------------------------------------------- 2
-async function manualInstalacao(arquivo) {
-  const d = new Deck({ arquivo, rodape: `VERIMULTA · ${RODAPE}` });
-
-  d.capa({
-    eyebrow: 'manual de instalação · www.verimulta.com.br',
-    titulo: ['Do ZIP ao AR:', 'o site hospedado e', '~o caixa recebendo'],
-    subtitulo: 'Cada clique, na ordem, sem pular etapa: GitHub » Render » domínio » Mercado Pago com entrega automática de acesso por plano » e-mail » OCR » teste de fogo. Ao fim deste manual o cliente paga e recebe o acesso sozinho — você só acompanha o MRR subir no Painel do Dono.'
-  });
-
-  d.folha({ eyebrow: 'etapa 1 · o código na nuvem (github · 15 min)', titulo: 'Suba o sistema para o GitHub' });
-  d.passos([
-    { titulo: '1.', corpo: 'Acesse `github.com` » **Sign up** » crie a conta com o e-mail da empresa e confirme.' },
-    { titulo: '2.', corpo: 'Canto superior direito **+** » **New repository** » Nome: `verimulta` » marque **Private** » **Create repository**.' },
-    { titulo: '3.', corpo: 'Na tela do repositório, clique em **"uploading an existing file"** » abra a pasta `6_CODIGO_FONTE/sistema` no seu PC » selecione **todo o conteúdo de dentro dela** (Ctrl+A) e arraste para o navegador.' },
-    { titulo: '4.', corpo: 'Aguarde o upload » clique **Commit changes**. Código na nuvem. *Importante: arraste o **conteúdo** da pasta, não a pasta — o `servidor.js` tem de aparecer na raiz do repositório.*' }
-  ], { y: d.y + 6 });
-  d.nota('O repositório privado protege o seu código. A `.gitignore` já impede que banco, `node_modules` e segredos subam junto.');
-
-  d.folha({ eyebrow: 'etapa 2 · o servidor (render · 20 min)', titulo: 'Ligue o sistema com 1 Blueprint' });
-  d.passos([
-    { titulo: '1.', corpo: '`render.com` » **Sign up with GitHub** » autorize o acesso ao repositório `verimulta`.' },
-    { titulo: '2.', corpo: 'Painel » **New +** » **Blueprint** » selecione `verimulta` » o Render lê o `render.yaml` e monta tudo » **Apply**.' },
-    { titulo: '3. Confira o disco antes de seguir', corpo: '**Settings » Disks**: tem de existir um disco de 1 GB montado em `/var/data`, e `DB_PATH` = `/var/data/verimulta.db` em Environment. **Sem o disco, cada deploy zera a base inteira** — usuários, multas, defesas e pagamentos.', cor: COR.alerta },
-    { titulo: '4.', corpo: '`JWT_SECRET` e `ADMIN_SECRET` o Render **gera sozinho**. Você só preenche depois as chaves do dinheiro, do e-mail e do OCR (etapas 3, 5 e 6).' },
-    { titulo: '5.', corpo: 'Espere o deploy ficar **Live** » teste `verimulta.onrender.com/app.html` no celular. Depois: **Settings » Custom Domains** » `www.verimulta.com.br` » copie o CNAME » cadastre na Zona DNS do seu provedor. SSL automático em até 1h.' }
-  ], { y: d.y + 2, tamanhoCorpo: 9.5 });
-
-  d.folha({ eyebrow: 'etapa 3 · o caixa (mercado pago · 30 min)', titulo: 'Configurar o recebimento' });
-  d.passos([
-    { titulo: '1. Conta PJ', corpo: '`mercadopago.com.br` » Criar conta » CNPJ **55.745.297/0001-06** (PrimeCorp Brokers) » envie os documentos e cadastre a conta bancária onde o dinheiro vai cair.' },
-    { titulo: '2. Credencial de produção', corpo: 'Logado » `mercadopago.com.br/developers` » **Suas integrações » Criar aplicação** » nome "Verimulta" » modelo **Pagamentos on-line / Assinaturas** » **Credenciais de produção** » copie o **Access Token** (`APP_USR-...`) » no Render: `GATEWAY`=`mercadopago` e `MP_ACCESS_TOKEN`= o token.' },
-    { titulo: '3. Webhook (a entrega automática)', corpo: `Na aplicação » **Webhooks / Notificações** » Modo produção » URL: \`${WEBHOOK}\` » marque **Pagamentos** e **Assinaturas (preapproval)** » Salvar » copie a **Assinatura secreta** » Render: \`WEBHOOK_SECRET\` = a assinatura. Salvou = redeploy automático.` }
-  ], { y: d.y + 4 });
-  d.faixa('**Confira o endereço do webhook caractere por caractere.** É `/v1/webhooks/mercadopago`. Um endereço errado devolve 404, o Mercado Pago reenfileira a notificação em silêncio, e o cliente fica pagando sem receber o plano.', { y: d.y + 2, cor: COR.alerta, fundo: '#FDECEA' });
-
-  d.folha({ eyebrow: 'etapa 4 · como a entrega de acesso funciona', titulo: 'Cliente pagou » plano liberado. Sozinho.' });
-  d.faixa('**O ciclo automático, em 6 batidas:** (1) o cliente toca "Assinar" » (2) o servidor cria a assinatura recorrente no MP e o cliente paga no checkout » (3) o MP dispara o webhook » (4) o servidor **valida a assinatura criptográfica** e **reconsulta o status real** no MP » (5) aprovado = o plano grava no usuário e os limites liberam na hora » (6) o e-mail de confirmação dispara e o Painel do Dono soma o MRR. **Zero toque seu.**');
-  d.tabela({
-    colunas: ['Plano pago', 'O que libera automaticamente'],
-    larguras: [0.75, 3],
-    tamanho: 9.2,
-    linhas: [
-      ['`combo1` · **R$ 29,90**', '1 CNH + 2 veículos · auditoria completa · probabilidade · defesas ilimitadas · placas de terceiros'],
-      ['`combo2` · **R$ 39,90**', '2 CNHs + 2 veículos (+1 dependente com o mesmo acesso)'],
-      ['`combo3` · **R$ 49,90**', '3 CNHs + 3 veículos (+2 dependentes)'],
-      ['`empresa_start` · **R$ 89,90**', 'CNPJ · 5 veículos + 2 usuários · indicação de condutor · pontos por motorista'],
-      ['`empresa_pro` · **R$ 149,90**', '15 veículos + 5 usuários · relatórios gerenciais'],
-      ['`frota` · sob proposta', 'R$ 11,90/veículo, degressivo — ative via contato comercial']
-    ],
-    y: d.y + 2
-  });
-  d.nota('Cancelou no app = o servidor cancela a recorrência no MP na hora. Pagamento recusado ou atrasado **não** ativa: o webhook só libera com status aprovado. Trilha completa de cada pagamento no Painel do Dono.');
-
-  d.folha({ eyebrow: 'etapas 5 e 6 · e-mail e ocr', titulo: 'As últimas duas chaves' });
-  d.passos([
-    { titulo: '5. E-mail `contato@verimulta.com.br` (Zoho grátis · 20 min)', corpo: '`zoho.com/mail` » **Forever Free** » adicionar domínio `verimulta.com.br` » o Zoho mostra 2 registros (TXT de verificação + MX) » cadastre ambos na Zona DNS » crie a caixa `contato@` » em Segurança, gere uma **Senha de aplicativo** » no Render: `SMTP_HOST`=`smtp.zoho.com` · `SMTP_PORT`=`465` · `SMTP_USER`=`contato@verimulta.com.br` · `SMTP_PASS`=[senha de app] · `EMAIL_FROM`=`Verimulta <contato@verimulta.com.br>`.' },
-    { titulo: '6. OCR das fotos (Google Vision · 15 min)', corpo: '`console.cloud.google.com` » novo projeto "verimulta" » APIs e serviços » Biblioteca » **Cloud Vision API » Ativar** » Credenciais » Criar credencial » **Chave de API** » Render: `GOOGLE_VISION_KEY`. São 1.000 leituras/mês grátis.' },
-    { titulo: 'Monitoramento em produção', corpo: '`FONTES_MONITORAMENTO`=`demo` e **jamais** defina `DEMO_NOVA_MULTA` em produção — a regra da casa é nunca inventar multa. Os alertas de prazo funcionam desde o dia 1; a varredura de novos débitos expande com os convênios oficiais.', cor: COR.alerta }
-  ], { y: d.y + 4 });
-
-  d.folha({ eyebrow: 'etapa 7 · o teste de fogo', titulo: 'A venda-piloto que autoriza o lançamento' });
+  d.folha({ eyebrow: 'etapa 7 · o teste de fogo (15 min)', titulo: 'A venda-piloto que autoriza o lançamento' });
   d.passos([
     { titulo: '1.', corpo: 'No celular, acesse `www.verimulta.com.br` » crie uma conta real com o **seu** e-mail » **marque o aceite dos Termos** (sem ele o cadastro não conclui — é exigência da LGPD) » confira o e-mail de boas-vindas chegando.' },
     { titulo: '2.', corpo: 'Fotografe uma notificação real » veja o OCR preencher » abra o diagnóstico » confirme o **Índice de Consistência** na manchete e o paywall travando a probabilidade.' },
     { titulo: '3.', corpo: 'Assine o **Combo 01 (R$ 29,90)** com o seu próprio cartão » conclua no checkout do MP » volte ao app » o badge deve virar **PLANO ATIVO** em até 1 minuto (o webhook trabalhando).' },
     { titulo: '4.', corpo: 'Gere a **Defesa Prévia** » **Emitir em PDF** » confira o timbre (o PDF vem do servidor, não da impressora do navegador) » gere também o **Extrato de Auditoria**. Abra `/admin.html` com a sua chave » veja o pagamento na trilha e **MRR = R$ 29,90**.' },
     { titulo: '5.', corpo: 'Cancele em 1 toque no perfil » confirme o cancelamento refletindo no MP. **Ciclo completo validado nos dois sentidos = pode vender para o Brasil.**' }
-  ], { y: d.y + 2, tamanhoCorpo: 9.5 });
-
-  d.capa({
-    fecho: true,
-    eyebrow: 'instalação concluída',
-    titulo: ['Site no ar. Caixa aberto.', 'Entrega automática por plano.', '~Agora: feed + pitch + R$ 35/dia.'],
-    subtitulo: 'Os roteiros de vídeo-pitch para Instagram, Facebook e LinkedIn estão no documento irmão deste manual. Verifica, Brasil.'
-  });
-  return d.gravar();
-}
-
-// ---------------------------------------------------------------- 3
-async function doZeroAoAr(arquivo) {
-  const d = new Deck({ arquivo, rodape: RODAPE });
-
-  d.capa({
-    eyebrow: 'o guia mestre · você liga, o desenvolvedor só confere',
-    titulo: ['Do Zero ao Ar:', 'www.verimulta.com.br', '~funcionando e recebendo'],
-    subtitulo: 'A arquitetura final com cada peça no lugar certo, as conexões na ordem exata (domínio » sistema » dinheiro » e-mail » OCR), o teste de fogo, e o Checklist de Homologação que o desenvolvedor assina dizendo "está tudo certo".'
-  });
-
-  d.folha({ eyebrow: 'a arquitetura final · quem faz o quê', titulo: 'Cada serviço no seu talento' });
-  d.cartoes([
-    { titulo: 'O provedor do domínio — a casa do nome', corpo: 'Registro do domínio `verimulta.com.br` e gestão da Zona DNS. Opcionalmente o e-mail profissional `contato@verimulta.com.br`. **Por que não o sistema todo aqui?** A hospedagem de sites comum não executa Node.js — e o nosso motor é Node.' },
-    { titulo: 'Render — a casa do motor', corpo: 'O **sistema completo** (site + app + API + painel + webhook) roda no Render com deploy de 1 clique (`render.yaml`), **US$ 7/mês** no plano Starter. O domínio apenas **aponta** para ele: o cliente só vê `www.verimulta.com.br` e nunca sabe onde mora o motor.', destaque: true }
-  ], 2, { y: d.y + 4 });
-  d.tabela({
-    colunas: ['Endereço', 'Aponta para', 'Onde se configura'],
-    larguras: [1.1, 1.1, 1.6],
-    tamanho: 9.2,
-    linhas: [
-      ['`www.verimulta.com.br`', 'Render (sistema completo)', 'Zona DNS » registro **CNAME** `www` » [destino do Render]'],
-      ['`verimulta.com.br` (raiz)', 'Redirect para `www`', 'Painel do provedor » Redirecionamento de domínio'],
-      ['`contato@verimulta.com.br`', 'Zoho Mail (ou o provedor)', 'Criar a caixa + **senha de aplicativo** para o SMTP']
-    ],
-    y: d.y + 6
-  });
-
-  d.folha({ eyebrow: 'conexão 1 · o código na nuvem (20 min)', titulo: 'GitHub + Render (o motor liga aqui)' });
-  d.passos([
-    { titulo: '1. GitHub', corpo: '`github.com` » conta com o e-mail da empresa » **New repository** `verimulta` (**Private**) » "uploading an existing file" » arraste o **conteúdo** da pasta `sistema` (o `servidor.js` na raiz) » Commit.' },
-    { titulo: '2. Render', corpo: '`render.com` » Sign up with GitHub » **New + » Blueprint** » repositório `verimulta` » **Apply**. O `render.yaml` monta o serviço, o disco persistente e os segredos.' },
-    { titulo: '3. O que o Blueprint já resolve', corpo: '`NODE_ENV=production` · `JWT_SECRET` e `ADMIN_SECRET` gerados · disco em `/var/data` com `DB_PATH` apontado · `ORIGENS_PERMITIDAS` preenchida. **Você preenche só o que depende de conta de terceiro:** `URL_BASE` = `https://www.verimulta.com.br` e, depois, as chaves do MP, do e-mail e do OCR.' },
-    { titulo: '4. Prova de vida', corpo: '**Deploy Live** (bolinha verde) » abra `verimulta.onrender.com/app.html` no celular. Sistema na internet. Agora vamos dar o nome dele.' }
-  ], { y: d.y + 2, tamanhoCorpo: 9.5 });
-
-  d.folha({ eyebrow: 'conexão 2 · o nome oficial (15 min + propagação)', titulo: 'www.verimulta.com.br apontando para o motor' });
-  d.passos([
-    { titulo: '1. No Render', corpo: 'Serviço » **Settings » Custom Domains** » Add `www.verimulta.com.br` » copie o destino CNAME que ele mostrar (algo como `verimulta.onrender.com`).' },
-    { titulo: '2. Na Zona DNS do domínio', corpo: 'Painel » Domínios » `verimulta.com.br` » **Zona DNS / Editar DNS** » novo registro: Tipo **CNAME** · Nome `www` · Valor = o destino copiado » Salvar.' },
-    { titulo: '3. Raiz redirecionando', corpo: 'Redirecionamento: `verimulta.com.br` » `https://www.verimulta.com.br` — assim quem digitar sem `www` também chega.' },
-    { titulo: '4. Aguarde e confira', corpo: 'Propagação de 1 a 4 horas (até 24h no pior caso). Teste `www.verimulta.com.br` abrindo **com o cadeado** (SSL automático do Render). Ajuste `URL_BASE` no Render para o domínio final.' }
-  ], { y: d.y + 6 });
-
-  d.folha({ eyebrow: 'conexão 3 · o dinheiro (mercado pago · 30 min)', titulo: 'Cliente paga » acesso libera sozinho' });
-  d.passos([
-    { titulo: '1. Conta PJ', corpo: '`mercadopago.com.br` » criar conta com o CNPJ **55.745.297/0001-06** (PrimeCorp) » validar documentos » cadastrar a conta bancária de saque.' },
-    { titulo: '2. Credencial', corpo: '`mercadopago.com.br/developers` » Suas integrações » Criar aplicação "Verimulta" » Credenciais de produção » copiar o **Access Token** (`APP_USR-...`) » Render: `GATEWAY`=`mercadopago` · `MP_ACCESS_TOKEN`= o token.' },
-    { titulo: '3. Webhook (a liberação automática)', corpo: `Na aplicação » Webhooks » modo Produção » URL \`${WEBHOOK}\` » eventos de **Pagamentos + Assinaturas** » salvar » copiar a **assinatura secreta** » \`WEBHOOK_SECRET\` no Render.` },
-    { titulo: 'O que acontece então', corpo: 'Pagou » o MP avisa » o servidor **valida o HMAC** e **reconsulta o status real** na API do MP » o plano libera » o e-mail sai » o MRR soma. **Zero toque humano.**' }
-  ], { y: d.y + 2, tamanhoCorpo: 9.5 });
-
-  d.folha({ eyebrow: 'conexões 4 e 5 · e-mail e ocr (35 min)', titulo: 'As últimas tomadas' });
-  d.cartoes([
-    { titulo: 'E-mail transacional', corpo: 'Crie `contato@verimulta.com.br` (Zoho Forever Free ou o plano de e-mail do provedor) » anote o servidor SMTP e a porta 465 » gere uma **senha de aplicativo** » no Render: `SMTP_HOST`, `SMTP_PORT`=`465`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`.' },
-    { titulo: 'OCR das fotos', corpo: '`console.cloud.google.com` » projeto "verimulta" » ativar **Cloud Vision API** » Credenciais » Chave de API » `GOOGLE_VISION_KEY` no Render. 1.000 leituras/mês grátis.' },
-    { titulo: 'Teste do e-mail', corpo: 'Crie uma conta no app: o e-mail de boas-vindas deve chegar em 1 minuto. Chegou = tomada ligada. **Sem SMTP o sistema não quebra** — os e-mails ficam registrados na tabela `emails_log` e aparecem no Painel do Dono.' },
-    { titulo: 'Borda e origens', corpo: '`ORIGENS_PERMITIDAS` lista os domínios autorizados a chamar a API de fora (a vitrine no Netlify, por exemplo). Vazio = só mesma origem. **Nunca** use `*`: isso abriria as rotas autenticadas para qualquer site.' }
-  ], 2, { y: d.y + 4 });
-
-  d.folha({ eyebrow: 'conexão 6 · o teste de fogo (15 min)', titulo: 'A primeira venda é sua' });
-  d.passos([
-    { titulo: '1.', corpo: 'No celular: `www.verimulta.com.br` » criar conta real » **aceitar os Termos** » e-mail de boas-vindas chegando.' },
-    { titulo: '2.', corpo: 'Fotografar uma notificação real » OCR preenche » diagnóstico com o **Índice de Consistência** » paywall travando a probabilidade.' },
-    { titulo: '3.', corpo: 'Assinar o **Combo 01 (R$ 29,90)** com o seu cartão » checkout MP » voltar ao app » badge **PLANO ATIVO** em até 1 min.' },
-    { titulo: '4.', corpo: 'Gerar a Defesa » **PDF timbrado do servidor** » e o Extrato de Auditoria » abrir `/admin.html` com a sua chave » pagamento na trilha, **MRR R$ 29,90**.' },
-    { titulo: '5.', corpo: 'Cancelar em 1 toque » cancelamento refletindo no MP. **Ciclo completo validado nos dois sentidos = liberado para vender.**' }
   ], { y: d.y + 2, tamanhoCorpo: 9.5 });
 
   d.folha({ eyebrow: 'a folha do desenvolvedor · homologação', titulo: 'Checklist de Homologação — 20 itens' });
@@ -282,14 +187,13 @@ async function doZeroAoAr(arquivo) {
 
   d.capa({
     fecho: true,
-    eyebrow: 'a ordem de largada',
-    titulo: ['O domínio aponta. O Render roda.', 'O Mercado Pago recebe. Você comanda.', '~O desenvolvedor? Só assina o "OK".'],
-    subtitulo: '6 conexões, um teste de fogo, 20 itens de homologação — e o Verimulta está no ar, em nome da PrimeCorp. Verifica, Brasil.'
+    eyebrow: 'ativação concluída',
+    titulo: ['Site no ar. Caixa aberto.', 'Entrega automática por plano.', '~Agora: feed + pitch + R$ 35/dia.'],
+    subtitulo: 'O domínio aponta, o Render roda, o Mercado Pago recebe e você comanda. O desenvolvedor só assina o "OK". Verifica, Brasil.'
   });
   return d.gravar();
 }
-
-// ---------------------------------------------------------------- 4
+// ---------------------------------------------------------------- 2
 async function handoffDesenvolvedor(arquivo) {
   const d = new Deck({ arquivo, rodape: `VERIMULTA · HANDOFF DE DESENVOLVIMENTO · ${CNPJ}` });
 
@@ -414,7 +318,7 @@ async function handoffDesenvolvedor(arquivo) {
   return d.gravar();
 }
 
-// ---------------------------------------------------------------- 5
+// ---------------------------------------------------------------- 3
 async function cronogramaGoLive(arquivo) {
   const d = new Deck({ arquivo, rodape: `VERIMULTA · ${RODAPE}` });
 
@@ -468,4 +372,4 @@ async function cronogramaGoLive(arquivo) {
   return d.gravar();
 }
 
-module.exports = { planoDeAtivacao, manualInstalacao, doZeroAoAr, handoffDesenvolvedor, cronogramaGoLive };
+module.exports = { guiaDeAtivacao, handoffDesenvolvedor, cronogramaGoLive };
