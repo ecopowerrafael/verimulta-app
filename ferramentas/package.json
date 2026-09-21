@@ -7,9 +7,11 @@
     "docs": "node gerar-documentos.js",
     "conferir": "node conferir.js",
     "zip": "node empacotar.js",
-    "pasta": "node preparar-pasta.js"
+    "pasta": "node preparar-pasta.js",
+    "credenciamento": "node credenciamento-docx.js"
   },
   "dependencies": {
+    "docx": "^9.7.1",
     "pdfkit": "^0.20.2"
   }
 }
