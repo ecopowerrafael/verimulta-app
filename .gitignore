@@ -24,3 +24,9 @@ node_modules/
 *.db
 *.db-wal
 *.db-shm
+
+# Tunel (55 MB, baixado na maquina)
+cloudflared.exe
+.cloudflared/
+tunel.log
+publicar.log

@@ -18,7 +18,8 @@ const MANUAIS = path.join(RAIZ, '3_DOCUMENTACAO_PROJETO', 'manuais');
 const AUDITORIA = path.join(RAIZ, '6_CODIGO_FONTE', 'AUDITORIA.md');
 
 /** Nunca entram no pacote: pesados, gerados, ou com dado de execução. */
-const EXCLUIR = [/^node_modules$/, /^\.git$/, /\.db(-wal|-shm)?$/, /^\.env$/, /\.log$/];
+const EXCLUIR = [/^node_modules$/, /^\.git$/, /\.db(-wal|-shm)?$/, /^\.env$/, /\.log$/,
+  /^cloudflared\.exe$/, /^\.cloudflared$/];   // 55 MB: baixado na maquina de destino
 const excluido = (nome) => EXCLUIR.some(rx => rx.test(nome));
 
 function copiar(de, para) {
@@ -35,6 +36,26 @@ function copiar(de, para) {
 }
 
 // ------------------------------------------------------------------ atalhos
+const PUBLICAR = `@echo off
+title Verimulta - Publicar na internet (deixe aberto)
+cd /d "%~dp0"
+where node >nul 2>&1
+if errorlevel 1 (
+  echo   Rode antes o 1-INSTALAR.cmd
+  pause
+  exit /b 1
+)
+node "%~dp0publicar.js"
+pause
+`;
+
+const ENDERECOFIXO = `@echo off
+title Verimulta - Endereco fixo no seu dominio
+cd /d "%~dp0"
+node "%~dp0publicar.js" --fixo
+pause
+`;
+
 const SERVIDOR24H = `@echo off
 title Verimulta - Servidor 24h (deixe esta janela aberta)
 cd /d "%~dp0sistema"
@@ -268,6 +289,241 @@ echo.
 pause
 `;
 
+// ------------------------------------------------------------- publicar
+const PUBLICAR_JS = `/**
+ * VERIMULTA — publica o servidor local na internet, com HTTPS.
+ *
+ * POR QUE TUNEL E NAO ABRIR PORTA NO ROTEADOR
+ * Abrir porta expoe o IP da sua casa, exige IP fixo (ou DNS dinamico) e nao
+ * resolve o certificado. E o iPhone SO instala o app na tela de inicio se o
+ * endereco for HTTPS com certificado valido. O tunel resolve os tres de uma
+ * vez: sai pela conexao de saida (nada de porta aberta), o certificado e da
+ * Cloudflare e o endereco ja nasce https.
+ *
+ * DOIS MODOS
+ *   node publicar.js          teste imediato. Endereco temporario, sem conta.
+ *   node publicar.js --fixo   endereco definitivo no seu dominio.
+ *
+ * O modo rapido e para HOJE, com 2 ou 3 pessoas. Para o beta de 30 dias use
+ * o modo fixo: o endereco temporario MUDA a cada reinicio, e quem instalou o
+ * app no celular fica com um atalho quebrado.
+ */
+const { spawn, spawnSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const https = require('https');
+
+const RAIZ = __dirname;
+const SISTEMA = path.join(RAIZ, 'sistema');
+const ENV = path.join(SISTEMA, '.env');
+const CLOUDFLARED = path.join(RAIZ, 'cloudflared.exe');
+const PORTA = 3000;
+const FIXO = process.argv.includes('--fixo');
+
+const linha = (t = '') => console.log(t);
+const titulo = (t) => { linha(); linha('  ' + '='.repeat(58)); linha('   ' + t); linha('  ' + '='.repeat(58)); linha(); };
+
+// ------------------------------------------------------------ pre-requisitos
+function conferirPreRequisitos() {
+  if (!fs.existsSync(path.join(SISTEMA, 'node_modules'))) {
+    linha('   Falta instalar. Rode antes o 1-INSTALAR.cmd');
+    process.exit(1);
+  }
+  if (!fs.existsSync(ENV)) {
+    linha('   Falta configurar. Rode antes o 2-CONFIGURAR.cmd');
+    process.exit(1);
+  }
+}
+
+/** Baixa o cloudflared na primeira vez (55 MB). Fica na pasta, nao no sistema. */
+function baixarCloudflared() {
+  return new Promise((resolve, reject) => {
+    if (fs.existsSync(CLOUDFLARED)) return resolve(false);
+    linha('   Baixando o cloudflared (55 MB, so na primeira vez)...');
+    const url = 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe';
+    const arquivo = fs.createWriteStream(CLOUDFLARED);
+    const pegar = (endereco) => https.get(endereco, (r) => {
+      if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) return pegar(r.headers.location);
+      if (r.statusCode !== 200) return reject(new Error('download falhou: HTTP ' + r.statusCode));
+      r.pipe(arquivo);
+      arquivo.on('finish', () => arquivo.close(() => resolve(true)));
+    }).on('error', reject);
+    pegar(url);
+  });
+}
+
+/** Grava (ou troca) uma variavel no .env, preservando o resto. */
+function definirNoEnv(chave, valor) {
+  const linhas = fs.readFileSync(ENV, 'utf8').split(/\\r?\\n/);
+  let achou = false;
+  const saida = linhas.map(l => {
+    if (new RegExp('^' + chave + '=').test(l.trim())) { achou = true; return \`\${chave}=\${valor}\`; }
+    return l;
+  });
+  if (!achou) saida.push(\`\${chave}=\${valor}\`);
+  fs.writeFileSync(ENV, saida.join('\\r\\n'), 'utf8');
+}
+
+function lerDoEnv(chave) {
+  if (!fs.existsSync(ENV)) return null;
+  const m = fs.readFileSync(ENV, 'utf8').match(new RegExp('^' + chave + '=(.*)$', 'm'));
+  return m ? m[1].trim() : null;
+}
+
+/** Espera a porta 3000 responder antes de expor o tunel. */
+function esperarServidor(tentativas = 40) {
+  return new Promise((resolve, reject) => {
+    const tentar = (n) => {
+      const req = require('http').get({ host: '127.0.0.1', port: PORTA, path: '/v1/saude', timeout: 1500 },
+        (r) => { r.resume(); resolve(); });
+      req.on('error', () => n <= 1 ? reject(new Error('o servidor nao subiu')) : setTimeout(() => tentar(n - 1), 500));
+      req.on('timeout', () => { req.destroy(); });
+    };
+    tentar(tentativas);
+  });
+}
+
+// ------------------------------------------------------------ modo rapido
+async function modoRapido() {
+  titulo('PUBLICAR NA INTERNET — ENDERECO TEMPORARIO');
+  linha('   Para testar hoje, com poucas pessoas. Sem conta, sem cadastro.');
+  linha();
+  linha('   ATENCAO: este endereco MUDA toda vez que voce fechar e abrir.');
+  linha('   Para o beta de 30 dias, use:  node publicar.js --fixo');
+  linha();
+
+  await baixarCloudflared();
+
+  // O servidor sobe PRIMEIRO. Se o tunel abre com a porta 3000 muda, o
+  // cloudflared registra a origem como fora do ar e acaba trocando a URL —
+  // a que foi impressa na tela deixa de existir e ninguem consegue entrar.
+  linha('   Subindo o servidor...');
+  let servidor = spawn(process.execPath, ['servidor.js'], { cwd: SISTEMA, stdio: 'inherit' });
+  servidor.on('exit', (c) => { linha(\`   O servidor parou (codigo \${c}).\`); encerrar(); });
+  await esperarServidor();
+
+  linha('   Abrindo o tunel...');
+  const registro = fs.createWriteStream(path.join(RAIZ, 'tunel.log'), { flags: 'w' });
+  const tunel = spawn(CLOUDFLARED, ['tunnel', '--url', \`http://localhost:\${PORTA}\`, '--no-autoupdate'],
+    { stdio: ['ignore', 'pipe', 'pipe'] });
+
+  let endereco = null;
+
+  const reiniciarServidor = () => {
+    try { servidor.removeAllListeners('exit'); servidor.kill(); } catch (e) {}
+    servidor = spawn(process.execPath, ['servidor.js'], { cwd: SISTEMA, stdio: 'inherit' });
+    servidor.on('exit', (c) => { linha(\`   O servidor parou (codigo \${c}).\`); encerrar(); });
+  };
+
+  const procurarUrl = (texto) => {
+    if (endereco) return;
+    const m = String(texto).match(/https:\\/\\/[a-z0-9-]+\\.trycloudflare\\.com/);
+    if (!m) return;
+    endereco = m[0];
+
+    definirNoEnv('URL_BASE', endereco);
+
+    // O servidor subiu antes do tunel (para a origem existir quando ele
+    // registra) e por isso leu o URL_BASE antigo. Reinicia agora, com o
+    // endereco de hoje — senao o QR Code e a pagina de instalacao apontam
+    // para um endereco morto, que e o pior defeito possivel aqui.
+    reiniciarServidor();
+
+    titulo('NO AR');
+    linha('   Endereco para compartilhar com quem vai testar:');
+    linha();
+    linha('        ' + endereco + '/instalar.html');
+    linha();
+    linha('   Essa pagina mostra o QR Code e os passos de instalacao');
+    linha('   para Android e iPhone.');
+    linha();
+    linha('   Painel do Dono: ' + endereco + '/admin.html');
+    linha('   Sua chave .....: ' + (lerDoEnv('ADMIN_SECRET') || '(veja o 4-PAINEL-DO-DONO.cmd)'));
+    linha();
+    linha('   Se o endereco NAO abrir neste computador mas abrir no');
+    linha('   celular, o problema e o DNS do seu roteador, nao o sistema.');
+    linha('   Ajuste o DNS desta maquina para 1.1.1.1 e resolve.');
+    linha();
+    linha('   Deixe ESTA JANELA ABERTA. Fechou, sai do ar.');
+    linha('  ' + '='.repeat(58));
+    linha();
+
+    spawn('cmd', ['/c', 'start', '', endereco + '/instalar.html'], { detached: true, stdio: 'ignore' });
+  };
+
+  const anotar = (d) => { registro.write(d); procurarUrl(d); };
+  tunel.stdout.on('data', anotar);
+  tunel.stderr.on('data', anotar);   // o cloudflared imprime a URL no stderr
+  tunel.on('exit', (c) => { linha(\`   O tunel caiu (codigo \${c}).\`); encerrar(); });
+
+  const encerrar = () => {
+    try { tunel.kill(); } catch (e) {}
+    try { if (servidor) servidor.kill(); } catch (e) {}
+    process.exit(0);
+  };
+  process.on('SIGINT', encerrar);
+
+  setTimeout(() => {
+    if (!endereco) {
+      linha('   Nao consegui obter o endereco em 60 segundos.');
+      linha('   Verifique a internet e tente de novo.');
+      encerrar();
+    }
+  }, 60000);
+}
+
+// ------------------------------------------------------------ modo fixo
+function modoFixo() {
+  titulo('ENDERECO DEFINITIVO NO SEU DOMINIO');
+  linha('   Este e o modo do beta de 30 dias: o endereco nao muda, entao');
+  linha('   quem instalou o app no celular continua com o atalho certo.');
+  linha();
+  linha('   PRE-REQUISITO, uma vez so:');
+  linha('   O dominio precisa estar com os servidores DNS da Cloudflare.');
+  linha('   Conta gratuita em dash.cloudflare.com > Add a site > seguir o');
+  linha('   passo de trocar os nameservers no Registro.br. Leva algumas');
+  linha('   horas para propagar e NAO derruba o que ja existe no dominio.');
+  linha();
+  linha('   Depois disso, rode os comandos abaixo NESTA PASTA, um por vez:');
+  linha();
+  linha('   1) Autorizar (abre o navegador, escolha o dominio):');
+  linha('      cloudflared.exe tunnel login');
+  linha();
+  linha('   2) Criar o tunel (uma vez):');
+  linha('      cloudflared.exe tunnel create verimulta');
+  linha();
+  linha('   3) Apontar o subdominio para o tunel:');
+  linha('      cloudflared.exe tunnel route dns verimulta beta.verimulta.com.br');
+  linha();
+  linha('   4) Subir:');
+  linha(\`      cloudflared.exe tunnel run --url http://localhost:\${PORTA} verimulta\`);
+  linha();
+  linha('   5) Para ficar 24 horas no ar, instale como servico do Windows');
+  linha('      (abra o PowerShell como Administrador):');
+  linha('      cloudflared.exe service install');
+  linha();
+  linha('   6) Por fim, fixe o endereco no arquivo sistema\\\\.env:');
+  linha('      URL_BASE=https://beta.verimulta.com.br');
+  linha();
+  linha('   Feito isso, o 5-SERVIDOR-24H.cmd mantem o Verimulta de pe e o');
+  linha('   servico do cloudflared mantem o endereco publicado.');
+  linha();
+  linha('  ' + '='.repeat(58));
+  linha();
+  linha('   Quer testar agora, antes de mexer no dominio?');
+  linha('   Feche esta janela e use o 7-PUBLICAR-NA-INTERNET.cmd.');
+  linha();
+}
+
+// ------------------------------------------------------------ inicio
+conferirPreRequisitos();
+if (FIXO) {
+  baixarCloudflared().then(modoFixo).catch(e => { linha('   Falha: ' + e.message); process.exit(1); });
+} else {
+  modoRapido().catch(e => { linha('   Falha: ' + e.message); process.exit(1); });
+}
+`;
+
 // --------------------------------------------------------------- configurar
 const CONFIGURAR_JS = `/**
  * VERIMULTA — configuracao rapida.
@@ -387,7 +643,10 @@ PARA COMECAR A TESTAR: 3 CLIQUES
 
     4-PAINEL-DO-DONO.cmd   abre o painel e lembra a sua chave
     5-SERVIDOR-24H.cmd     modo servidor: sobe sozinho se cair
-    6-LINK-DO-CELULAR.cmd  mostra o endereco para instalar no celular
+    6-LINK-DO-CELULAR.cmd  endereco na sua rede (mesmo wi-fi)
+    7-PUBLICAR-NA-INTERNET.cmd  poe no ar com HTTPS, para qualquer
+                           pessoa acessar de qualquer lugar
+    8-ENDERECO-FIXO.cmd    endereco definitivo no seu dominio
     PARAR.cmd              desliga o servidor
 
   So o 1-INSTALAR precisa de internet e so roda uma vez.
@@ -440,9 +699,18 @@ PARA OS PARTICIPANTES DO BETA TESTAREM NO CELULAR
   6-LINK-DO-CELULAR.cmd mostra o endereco e abre a pagina com o
   QR Code pronto para compartilhar.
 
-  ATENCAO: o endereco de wi-fi local so funciona para quem esta na
-  mesma rede. Para os 30 acessarem de casa, o servidor precisa de um
-  endereco publico (dominio + porta liberada, tunel ou Render).
+  Para os 30 acessarem de casa, use o 7-PUBLICAR-NA-INTERNET.cmd:
+  ele abre um tunel com HTTPS valido e devolve o endereco pronto para
+  compartilhar. Nao precisa abrir porta no roteador nem expor o IP da
+  sua casa.
+
+  IMPORTANTE: o endereco do atalho 7 e TEMPORARIO e muda a cada vez
+  que voce fecha a janela. Para o beta de 30 dias, use o atalho 8 e
+  fixe o endereco no seu dominio - senao quem instalou o app no
+  celular fica com um atalho quebrado.
+
+  O iPhone so instala o app na tela de inicio se o endereco for HTTPS.
+  Por isso o tunel, e nao o endereco de wi-fi.
 
   Antes de convidar, entregue os dois documentos da pasta manuais:
   Verimulta_Termo_do_Beta.pdf e Verimulta_Roteiro_do_Beta.pdf.
@@ -490,6 +758,9 @@ function montar(destino, { assercoes = 72 } = {}) {
   escrever('3-INICIAR.cmd', INICIAR);
   escrever('4-PAINEL-DO-DONO.cmd', PAINEL);
   escrever('5-SERVIDOR-24H.cmd', SERVIDOR24H);
+  escrever('7-PUBLICAR-NA-INTERNET.cmd', PUBLICAR);
+  escrever('8-ENDERECO-FIXO.cmd', ENDERECOFIXO);
+  escrever('publicar.js', PUBLICAR_JS);
   escrever('6-LINK-DO-CELULAR.cmd', LINKCELULAR);
   escrever('PARAR.cmd', PARAR);
   escrever('configurar.js', CONFIGURAR_JS);
