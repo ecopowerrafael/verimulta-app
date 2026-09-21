@@ -271,9 +271,10 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
   <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Verificar multa</h1><div class="sub">Fotografe a notificação de autuação</div></div></div>
   <div class="miolo">
     <div class="cam"><div class="mira"><i></i><i></i><i></i><i></i></div><div class="varre"></div><span>Enquadre a Notificação de Autuação<br>ou envie uma foto da galeria</span></div>
-    <input type="file" accept="image/*" id="scanFile" style="display:none" onchange="analisar()">
-    <button class="btn amarelo" onclick="document.getElementById('scanFile').click()">📸 &nbsp;Fotografar ou enviar</button>
-    <button class="btn sec" onclick="analisar()">Verificar a multa encontrada no meu CPF</button>
+    <input type="file" accept="image/*" id="scanFile" style="display:none" onchange="lerDocumento()">
+    <button class="btn amarelo" onclick="document.getElementById('scanFile').click()">Fotografar ou enviar a notifica&ccedil;&atilde;o</button>
+    <button class="btn sec" onclick="abrirConferencia({}, null)">Digitar os dados &agrave; m&atilde;o</button>
+    <div class="cz" style="margin-top:12px;text-align:center">Voc&ecirc; confere cada campo antes da auditoria rodar.</div>
   </div>
 </section>
 
@@ -284,6 +285,39 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
     <h3 style="font-size:19px;font-weight:800" id="anTexto">Lendo o documento…</h3>
     <div class="barra" style="max-width:250px;margin:0 auto"><i id="anBarra" style="width:8%"></i></div>
     <div class="cz" id="anPasso">OCR extraindo os campos</div>
+  </div>
+</section>
+
+<!-- CONFERÊNCIA DOS CAMPOS -->
+<section class="tela" id="t-confirmar">
+  <div class="cab"><button class="volta" onclick="go('t-scan')">&larr;</button><div><h1>Confira os dados</h1><div class="sub" id="cfSub">O que estiver errado aqui entra errado na defesa</div></div></div>
+  <div class="miolo">
+    <div class="cartao" id="cfAviso" style="border-left:4px solid var(--sinal);display:none">
+      <div class="cz" id="cfAvisoTexto"></div>
+    </div>
+    <div class="cartao">
+      <div style="display:grid;gap:11px">
+        <div><label class="cz">N&uacute;mero do AIT</label><input id="cf-ait" placeholder="como est&aacute; no documento"></div>
+        <div><label class="cz">&Oacute;rg&atilde;o autuador</label><input id="cf-orgao" placeholder="Ex.: Prefeitura de ..."></div>
+        <div><label class="cz">Descri&ccedil;&atilde;o da infra&ccedil;&atilde;o</label><input id="cf-descricao" placeholder="Como est&aacute; no documento"></div>
+        <div><label class="cz">Enquadramento</label><input id="cf-enquadramento" placeholder="ex.: 0000-0"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+          <div><label class="cz">Valor (R$)</label><input id="cf-valor" inputmode="decimal" placeholder="0,00"></div>
+          <div><label class="cz">Pontos</label><input id="cf-pontos" inputmode="numeric" placeholder="0"></div>
+        </div>
+        <div><label class="cz">Data da infra&ccedil;&atilde;o</label><input type="date" id="cf-data_infracao"></div>
+        <div><label class="cz">Data da notifica&ccedil;&atilde;o</label><input type="date" id="cf-data_notificacao"></div>
+        <div><label class="cz">Prazo da Defesa Pr&eacute;via</label><input type="date" id="cf-prazo_defesa"></div>
+        <div><label class="cz">Origem da autua&ccedil;&atilde;o</label>
+          <select id="cf-origem">
+            <option value="agente">Agente de tr&acirc;nsito</option>
+            <option value="radar">Radar / equipamento</option>
+          </select></div>
+        <div><label class="cz">Observa&ccedil;&atilde;o do agente (se houver)</label><input id="cf-observacao" placeholder="Como est&aacute; no campo observa&ccedil;&atilde;o"></div>
+      </div>
+      <button class="btn amarelo" style="margin-top:15px" onclick="confirmarEAuditar()">Rodar a auditoria</button>
+      <div class="cz" style="margin-top:10px">Campo que voc&ecirc; n&atilde;o souber pode ficar vazio &mdash; a auditoria avisa o que faltou.</div>
+    </div>
   </div>
 </section>
 
@@ -342,9 +376,9 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
     </div>
     <div class="cartao" id="statusCard" style="display:none">
       <span class="pill neutro">EM ANDAMENTO</span>
-      <h3 style="margin-top:9px">Defesa Prévia — AIT T00226588</h3>
+      <h3 style="margin-top:9px" id="stAit">Defesa Pr&eacute;via</h3>
       <ul class="tl" style="margin-top:15px">
-        <li class="feito"><div class="t">Defesa gerada</div><div class="d">Fundamento A12 aplicado</div></li>
+        <li class="feito"><div class="t">Defesa gerada</div><div class="d" id="stTeses">&mdash;</div></li>
         <li class="agora"><div class="t">Aguardando seu protocolo</div><div class="d">Online (site da Prefeitura) ou presencial</div></li>
         <li><div class="t">Em análise pelo órgão</div><div class="d">Prazo médio: 30–60 dias</div></li>
         <li><div class="t">Resultado</div><div class="d">Alerta na hora + registro para calibrar estimativas</div></li>
@@ -907,44 +941,79 @@ function renderHome(){
 }
 
 /* ===== momento mágico ===== */
-function analisar(){
+/* ===== Leitura do documento e conferência =====
+   Antes, o aplicativo mandava SEMPRE um conjunto fixo de campos junto com a
+   foto (AIT T00226588, "Dirigir utilizando celular", R$ 130,16). Como o
+   servidor só usa o OCR para preencher campo que veio vazio, a leitura era
+   descartada e toda pessoa recebia a mesma multa inventada. Agora a leitura
+   vem separada da gravação: lê, mostra para conferir, e só grava o que a
+   pessoa confirmou. */
+const CAMPOS_MULTA = ['ait','orgao','descricao','enquadramento','valor','pontos',
+                      'data_infracao','data_notificacao','prazo_defesa','origem','observacao'];
+
+async function lerDocumento(){
+  const arq = document.getElementById('scanFile').files[0];
+  if(!arq){ toast('Escolha uma foto da notifica\u00e7\u00e3o.'); return; }
   go('t-analise');
-  const passos = [
-    ['🔍','Lendo o documento…','OCR extraindo os campos',15],
-    ['📑','Campos extraídos','Órgão, enquadramento, datas, local',40],
-    ['⚖️','Auditando…','Rodando as 14 verificações (A1–A14)',70],
-    ['📊','Calculando probabilidade','Combinando os fundamentos',92],
-    ['✅','Pronto!','Abrindo o diagnóstico',100]
-  ];
-  let i = 0;
-  const tick = async ()=>{
-    const [ic,t,p,w] = passos[i];
-    document.getElementById('anIcone').textContent = ic;
-    document.getElementById('anTexto').textContent = t;
-    document.getElementById('anPasso').textContent = p;
-    document.getElementById('anBarra').style.width = w+'%';
-    i++;
-    if(i < passos.length){ setTimeout(tick, 800); return; }
-    // fim da animação: garante uma multa e abre o diagnóstico real
-    let multaId = APP.multas[0] && APP.multas[0].id;
-    if(!multaId){
-      const fd = new FormData();
-      const exemplo = { ait:'T00226588', orgao:'Prefeitura de Sumaré/SP', enquadramento:'7366-2',
-        descricao:'Dirigir utilizando celular', valor:'130.16', pontos:'4',
-        data_infracao:'2026-07-10', data_notificacao:'2026-07-30', prazo_defesa:'2026-09-28',
-        origem:'agente', tem_foto:'false', observacao:'CONDUTOR NAO IDENTI' };
-      const arq = document.getElementById('scanFile').files[0];
-      if(arq) fd.append('foto', arq);
-      if(APP.veiculos[0]) exemplo.veiculo_id = APP.veiculos[0].id;
-      Object.entries(exemplo).forEach(([k,v])=>fd.append(k,v));
-      const r = await api('/v1/multas/scan', { method:'POST', body: fd });
-      if(!r.ok){ toast('Falha ao registrar a multa.'); go('t-home'); return; }
-      multaId = r.dados.multa_id;
-      await carregarDados();
-    }
-    verDiagnostico(multaId);
-  };
-  tick();
+  animarAnalise();
+  const fd = new FormData();
+  fd.append('foto', arq);
+  const r = await api('/v1/multas/ler', { method:'POST', body: fd });
+  if(!r.ok){ toast('N\u00e3o foi poss\u00edvel processar a foto.'); go('t-scan'); return; }
+  const d = r.dados;
+  abrirConferencia(d.campos || {}, d.leu
+    ? `Lemos ${d.campos_extraidos} campo(s) do documento${d.confianca!=null?' (confian\u00e7a '+d.confianca+'%)':''}. Confira cada um.`
+    : `${d.motivo} ${d.orientacao}`);
+}
+
+function abrirConferencia(campos, aviso){
+  CAMPOS_MULTA.forEach(k => {
+    const el = document.getElementById('cf-' + k);
+    if(!el) return;
+    const v = campos[k];
+    el.value = (v === null || v === undefined) ? (k === 'origem' ? 'agente' : '') : String(v);
+  });
+  const caixa = document.getElementById('cfAviso');
+  if(aviso){ caixa.style.display = 'block'; document.getElementById('cfAvisoTexto').textContent = aviso; }
+  else { caixa.style.display = 'none'; }
+  go('t-confirmar');
+}
+
+async function confirmarEAuditar(){
+  const dados = {};
+  CAMPOS_MULTA.forEach(k => {
+    const el = document.getElementById('cf-' + k);
+    const v = el ? String(el.value).trim() : '';
+    if(v) dados[k] = v;
+  });
+  if(!dados.ait && !dados.descricao){
+    toast('Informe ao menos o n\u00famero do AIT ou a descri\u00e7\u00e3o da infra\u00e7\u00e3o.');
+    return;
+  }
+  // tem_foto alimenta a verifica\u00e7\u00e3o A12 (fragilidade probat\u00f3ria)
+  dados.tem_foto = document.getElementById('scanFile').files[0] ? 'true' : 'false';
+  if(APP.veiculoId) dados.veiculo_id = APP.veiculoId;
+  go('t-analise');
+  animarAnalise();
+  const r = await api('/v1/multas/scan', { method:'POST', json: dados });
+  if(!r.ok){ toast(r.dados.erro || 'Falha ao registrar a multa.'); go('t-confirmar'); return; }
+  await carregarDados();
+  verDiagnostico(r.dados.multa_id);
+}
+
+/* Anima\u00e7\u00e3o da tela de espera. */
+function animarAnalise(){
+  const passos = ['Lendo o documento\u2026','Conferindo datas e prazos','Rodando as 14 verifica\u00e7\u00f5es','Calculando o \u00cdndice'];
+  let i = 0, largura = 8;
+  const barra = document.getElementById('anBarra');
+  const passo = document.getElementById('anPasso');
+  clearInterval(window._anTimer);
+  window._anTimer = setInterval(() => {
+    largura = Math.min(96, largura + 12);
+    if(barra) barra.style.width = largura + '%';
+    if(passo && i < passos.length) passo.textContent = passos[i++];
+    if(largura >= 96) clearInterval(window._anTimer);
+  }, 420);
 }
 
 async function verDiagnostico(id){
@@ -985,6 +1054,15 @@ async function tentarDefesa(){
   if(r.status === 402){ abrirPaywall('defesa'); return; }
   if(!r.ok){ toast(r.dados.erro || 'Falha ao gerar a defesa.'); return; }
   APP.recursoId = r.dados.recurso_id;
+  // O cabecalho do acompanhamento vinha com um AIT fixo no HTML.
+  const ait = (APP.diag && APP.diag.multa && APP.diag.multa.ait) || '';
+  const elAit = document.getElementById('stAit');
+  if(elAit) elAit.textContent = 'Defesa Prévia' + (ait ? ' — AIT ' + ait : '');
+  const elTeses = document.getElementById('stTeses');
+  if(elTeses){
+    const n = (APP.diag && APP.diag.vicios_encontrados) || 0;
+    elTeses.textContent = n ? n + ' fundamento(s) aplicado(s)' : 'Sem inconsistência apontada';
+  }
   document.getElementById('defCard').textContent = r.dados.texto;
   go('t-defesa');
   toast('Defesa gerada pelo motor de auditoria ⚖️');

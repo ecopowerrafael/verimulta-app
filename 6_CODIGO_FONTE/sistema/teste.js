@@ -200,5 +200,36 @@ ok(traduzido.ait === 'T1' && traduzido.valor === 130.16, 'MAPA renomeia os campo
 const listaTraduzida = cfgHttp.traduzir([{ numeroAit: 'A' }, { numeroAit: 'B' }], { ait: 'numeroAit' });
 ok(Array.isArray(listaTraduzida) && listaTraduzida[1].ait === 'B', 'MAPA funciona sobre lista');
 
+console.log('\n[15] O scan le o documento da pessoa, nao uma multa fixa');
+// O defeito mais grave que o projeto teve: o app mandava SEMPRE um conjunto
+// fixo de campos junto com a foto (AIT T00226588, "Dirigir utilizando
+// celular", R$ 130,16). Como o servidor so usa o OCR para preencher campo
+// que veio vazio, a leitura era descartada e TODA pessoa recebia a mesma
+// multa inventada — inclusive dentro da Defesa Previa em PDF.
+const appScan = fs.readFileSync('./publico/app.html', 'utf8');
+ok(!/const exemplo = \{[\s\S]{0,200}ait:\s*'T00226588'/.test(appScan),
+   'o conjunto de campos fixo nao existe mais no app');
+ok(!/ait:\s*'T00226588'/.test(appScan), 'nenhum AIT fixo sendo enviado ao servidor');
+ok(!/Defesa Prévia — AIT T00226588/.test(appScan), 'o titulo do acompanhamento nao tem AIT fixo');
+ok(!/multa encontrada no meu CPF/.test(appScan),
+   'o botao que inventava multa "encontrada no CPF" foi removido');
+ok(/id="t-confirmar"/.test(appScan), 'existe a tela de conferencia dos campos');
+ok(/function confirmarEAuditar/.test(appScan), 'a multa so e criada depois da confirmacao');
+ok(/\/v1\/multas\/ler/.test(appScan), 'o app le o documento pela rota de leitura');
+
+const servidorScan = fs.readFileSync('./servidor.js', 'utf8');
+ok(/app\.post\('\/v1\/multas\/ler'/.test(servidorScan), 'rota de leitura existe no servidor');
+// A rota de leitura nao pode gravar: se ela inserir, volta o problema antigo
+// de gravar antes da pessoa conferir.
+const trechoLer = servidorScan.slice(servidorScan.indexOf("app.post('/v1/multas/ler'"),
+                                     servidorScan.indexOf("/** Cadastro da multa."));
+ok(!/INSERT INTO multas/.test(trechoLer), 'a rota de leitura NAO grava nada no banco');
+ok(/descartar\(req\.file\)/.test(trechoLer), 'a rota de leitura apaga o arquivo temporario');
+
+console.log('\n[16] OCR sem chave nao inventa texto');
+const ocrTxt = fs.readFileSync('./ocr.js', 'utf8');
+ok(/if \(!CHAVE\) return null;/.test(ocrTxt),
+   'sem GOOGLE_VISION_KEY o OCR devolve null em vez de texto de exemplo');
+
 console.log(`\n=== ${falhas} falha(s) ===`);
 process.exit(falhas ? 1 : 0);

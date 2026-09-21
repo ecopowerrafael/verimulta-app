@@ -239,7 +239,8 @@ async function handoffDesenvolvedor(arquivo) {
     linhas: [
       ['`POST /v1/auth/register` · `/login`', 'Cadastro (**exige** `consentimento: true` e grava data, IP e versão do termo) e login » JWT. Rate limit por IP.'],
       ['`GET/POST /v1/veiculos`', 'Listar e adicionar placas (limites por plano).'],
-      ['`POST /v1/multas/scan`', 'multipart foto » OCR » extração » grava a multa. Confere se o `veiculo_id` é do usuário.'],
+      ['`POST /v1/multas/ler`', 'Lê o documento (foto ou texto) e devolve os campos **sem gravar nada** — o usuário confere antes. Sem chave de OCR, responde `leu:false` com orientação, em vez de campos vazios.'],
+      ['`POST /v1/multas/scan`', 'Grava a multa com os campos **confirmados pelo usuário**. Confere se o `veiculo_id` é dele.'],
       ['`GET /v1/multas/:id/diagnostico`', 'Motor: 14 verificações + **Índice de Consistência** + probabilidade (com gating por plano).'],
       ['`POST /v1/recursos`', 'Gera a Defesa Prévia (402 sem assinatura — paywall no servidor).'],
       ['`GET /v1/recursos/:id/pdf`', '**Defesa Prévia em PDF timbrado**, gerada no servidor.'],
@@ -473,7 +474,7 @@ async function roteiroBeta(arquivo) {
     { titulo: '1. Instalar no celular', corpo: 'Abrir o endereço que você recebeu, e instalar pelo navegador (**Android:** três pontinhos » Instalar aplicativo · **iPhone:** Compartilhar » Adicionar à Tela de Início). **Anote:** funcionou de primeira?' },
     { titulo: '2. Criar a conta', corpo: 'Nome, e-mail, senha e o aceite dos Termos. **Anote:** faltou alguma informação? O aceite ficou claro?' },
     { titulo: '3. Cadastrar o veículo', corpo: 'Informar a placa. **Anote:** achou onde fazer isso sem ajuda?' },
-    { titulo: '4. Verificar uma multa real', corpo: 'Fotografar a notificação de autuação. **Anote:** o app leu os campos certos? Qual campo saiu errado? (este é o teste mais importante)' },
+    { titulo: '4. Verificar uma multa real', corpo: 'Fotografar a notificação — ou tocar em **Digitar os dados à mão**, que funciona igual. O app mostra os campos lidos para você **conferir e corrigir** antes de rodar a auditoria. **Anote:** que campo veio errado ou vazio? A tela de conferência ficou clara? (este é o teste mais importante)' },
   ], { y: d.y + 2, tamanhoCorpo: 9.2 });
 
   d.folha({ eyebrow: 'para o participante · 20 minutos', titulo: 'As 8 tarefas do teste (continuação)' });
@@ -493,7 +494,7 @@ async function roteiroBeta(arquivo) {
     linhas: [
       ['Ativação', 'Últimos usuários', 'Quantos dos 30 criaram conta. Abaixo de 20, o problema está no convite ou na instalação.'],
       ['Primeira auditoria', 'Últimas multas', 'Quantos chegaram a escanear uma multa. É o momento de verdade do produto.'],
-      ['Qualidade do OCR', 'Feedback, tarefa 4', 'Campo lido errado é o defeito mais caro: contamine a defesa e o usuário perde confiança.'],
+      ['Qualidade da leitura', 'Feedback, tarefa 4', 'Campo lido errado é o defeito mais caro. A tela de conferência segura o erro antes da defesa — veja quantos campos as pessoas precisaram corrigir.'],
       ['Entendimento', 'Feedback, tarefa 5', 'Alguém confundiu o Índice com garantia? Se acontecer mais de uma vez, a interface precisa mudar.'],
       ['Nota média', 'Feedback do beta', 'Abaixo de 3, pare a divulgação e corrija antes de abrir para mais gente.'],
       ['Relatos por tela', 'Feedback do beta', 'A tela mais citada é a que mais atrapalha. Comece por ela.']

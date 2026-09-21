@@ -121,6 +121,59 @@ app.get('/v1/veiculos', autenticar, (req, res) => {
 });
 
 // ---------- multas ----------
+/**
+ * Pré-leitura do documento: roda o OCR e devolve os campos SEM gravar nada.
+ *
+ * Existia só o /scan, que lia e gravava na mesma chamada. Como o aplicativo
+ * mandava todos os campos junto e o servidor só usa o OCR para preencher o que
+ * veio vazio, o resultado da leitura era sempre descartado. Separar leitura de
+ * gravação resolve isso na raiz: o usuário vê o que foi lido, corrige o que
+ * estiver errado, e só então a multa é criada.
+ */
+app.post('/v1/multas/ler', autenticar, limitar('ler', 40, 600), upload.single('foto'), async (req, res) => {
+  const corpo = req.body || {};
+  let texto = corpo.texto || null;
+  let origemTexto = texto ? 'texto informado' : null;
+
+  try {
+    if (!texto && req.file) {
+      texto = await ocrImagem(req.file.path);
+      origemTexto = texto ? 'OCR da foto' : null;
+    }
+  } catch (e) {
+    console.error('[scan] OCR falhou:', e.message);
+  } finally {
+    descartar(req.file);
+  }
+
+  if (!texto) {
+    // Sem chave do Vision, sem texto legível ou com o serviço fora do ar.
+    // Dizer isso é melhor que devolver campos vazios como se fossem leitura.
+    return res.json({
+      leu: false,
+      motivo: process.env.GOOGLE_VISION_KEY
+        ? 'Não conseguimos ler o documento desta foto.'
+        : 'A leitura automática de fotos ainda não está ligada neste ambiente.',
+      orientacao: 'Preencha os campos da notificação à mão — a auditoria funciona igual.',
+      campos: {}
+    });
+  }
+
+  const campos = extrairCampos(texto);
+  const preenchidos = Object.entries(campos)
+    .filter(([k, v]) => v !== null && v !== undefined && !['campos_faltantes', 'confianca'].includes(k));
+
+  res.json({
+    leu: preenchidos.length > 0,
+    origem: origemTexto,
+    confianca: campos.confianca ?? null,
+    campos_extraidos: preenchidos.length,
+    revisar: campos.campos_faltantes || [],
+    campos,
+    orientacao: 'Confira cada campo antes de continuar. O que estiver errado aqui entra errado na defesa.'
+  });
+});
+
 /** Cadastro da multa. Aceita imagem (campo 'foto') — ponto de plug do OCR real. */
 app.post('/v1/multas/scan', autenticar, limitar('scan', 30, 600), upload.single('foto'), async (req, res) => {
   const b = req.body || {};
