@@ -15,7 +15,9 @@ const DESTINO = path.join(__dirname, '..', '3_DOCUMENTACAO_PROJETO', 'manuais');
 const LISTA = [
   ['Verimulta_Guia_de_Ativacao.pdf', docs.guiaDeAtivacao],
   ['Verimulta_Handoff_Desenvolvedor.pdf', docs.handoffDesenvolvedor],
-  ['Verimulta_Cronograma_GoLive.pdf', docs.cronogramaGoLive]
+  ['Verimulta_Cronograma_GoLive.pdf', docs.cronogramaGoLive],
+  ['Verimulta_Termo_do_Beta.pdf', docs.termoBeta],
+  ['Verimulta_Roteiro_do_Beta.pdf', docs.roteiroBeta]
 ];
 
 /**

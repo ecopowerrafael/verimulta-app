@@ -376,4 +376,146 @@ async function cronogramaGoLive(arquivo) {
   return d.gravar();
 }
 
-module.exports = { guiaDeAtivacao, handoffDesenvolvedor, cronogramaGoLive };
+// ---------------------------------------------------------------- 4
+/**
+ * Termo de participação no beta fechado.
+ * MODELO — precisa do carimbo do advogado antes de ir para os participantes.
+ * O que este documento faz é garantir que ninguém entre no teste sem saber o
+ * que o app faz, o que ele ainda NÃO faz, e o que acontece com os dados dele.
+ */
+async function termoBeta(arquivo) {
+  const d = new Deck({ arquivo, rodape: `TERMO DE PARTICIPAÇÃO — BETA FECHADO · ${RODAPE}` });
+
+  d.capa({
+    eyebrow: 'beta fechado · convite e termo de participação',
+    titulo: ['Você foi convidado', '~para testar o Verimulta'],
+    subtitulo: 'Um teste fechado de 30 a 40 dias, gratuito, com um grupo pequeno de motoristas. Este documento explica em linguagem direta o que o aplicativo faz hoje, **o que ele ainda não faz**, e o que acontece com os seus dados. Leia antes de aceitar.'
+  });
+
+  d.folha({ eyebrow: 'parte 1 · o que o aplicativo faz hoje', titulo: 'O que você pode esperar — e o que não pode' });
+  d.cartoes([
+    { titulo: 'O que já funciona', corpo: 'Você fotografa a **notificação de autuação** que recebeu. O app lê o documento, roda **14 verificações** com a base legal de cada uma (CTB, resoluções do CONTRAN, portaria do INMETRO), mostra um **Índice de Consistência** e monta a **Defesa Prévia em PDF** no seu nome, para você revisar e protocolar. Também soma os **pontos** das multas que você cadastrar e avisa dos **prazos**.' },
+    { titulo: 'O que ainda NÃO funciona', corpo: 'O app **não consulta o Detran**. Ele não sabe o seu IPVA, o seu licenciamento, recall, dívida ativa, nem a sua pontuação oficial. O acesso a essas bases depende de credenciamento junto ao SENATRAN, que está em andamento. **Enquanto isso o app não mostra esses dados** — e avisa, em cada tela, que não consultou.', destaque: true }
+  ], 2, { y: d.y + 4 });
+  d.faixa('**O Verimulta não garante o cancelamento de multa nenhuma.** As probabilidades que aparecem na tela são estimativas calculadas a partir das verificações do documento — nunca promessa de resultado. Quem decide sobre a autuação é exclusivamente o órgão julgador. Qualquer pessoa que disser o contrário não está falando pela PrimeCorp.', { y: d.y + 2, cor: COR.alerta, fundo: '#FDECEA' });
+
+  d.folha({ eyebrow: 'parte 2 · seus dados', titulo: 'O que coletamos, por quê, e como você sai' });
+  d.tabela({
+    colunas: ['Dado', 'Para que serve', 'Você pode'],
+    larguras: [1, 2, 1],
+    tamanho: 9,
+    respiro: 11,
+    linhas: [
+      ['Nome e e-mail', 'Identificar sua conta e enviar os avisos de prazo.', 'exportar e excluir'],
+      ['CPF (opcional)', 'Preencher a Defesa Prévia no seu nome. Pode ficar em branco.', 'deixar em branco'],
+      ['Placa do veículo', 'Vincular a multa ao veículo e montar a defesa.', 'exportar e excluir'],
+      ['Foto ou texto da notificação', 'Ler os campos do auto e rodar as 14 verificações.', 'exportar e excluir'],
+      ['Validade da CNH (opcional)', 'Avisar você antes de vencer. Informada por você.', 'deixar em branco'],
+      ['Seu feedback do teste', 'Corrigir o que estiver ruim durante o beta.', 'ver o que enviou']
+    ],
+    y: d.y + 2
+  });
+  d.cartoes([
+    { titulo: 'Base legal e prazo', corpo: 'O tratamento acontece com **o seu consentimento** (LGPD, art. 7º, I), que você dá ao criar a conta e pode retirar quando quiser. Os dados do teste são mantidos enquanto durar o beta e enquanto a conta existir.' },
+    { titulo: 'Como sair a qualquer momento', corpo: 'No app: **Meu perfil » Excluir minha conta**. Veículos, multas, diagnósticos e defesas são apagados na hora. O registro de pagamento, quando houver, é mantido sem vínculo com pessoa identificável, por obrigação fiscal. Antes de sair, use **Baixar meus dados** para levar tudo com você.' }
+  ], 2, { y: d.y + 6, tamanhoCorpo: 9.5 });
+
+  d.folha({ eyebrow: 'parte 3 · combinado', titulo: 'O que se espera de cada lado' });
+  d.cartoes([
+    { titulo: 'Da nossa parte', corpo: '(1) Nenhuma cobrança durante o teste. (2) Responder ao que você relatar. (3) Não usar seus dados para outra finalidade nem repassar a terceiros. (4) Avisar antes de qualquer mudança que afete você. (5) Dizer sempre o que o app não sabe, em vez de inventar.' },
+    { titulo: 'Da sua parte', corpo: '(1) Usar com documentos reais seus. (2) **Conferir o prazo no documento oficial** antes de contar com o aviso do app — ele é apoio, não substitui a notificação. (3) Revisar a defesa antes de protocolar: ela sai no seu nome e quem protocola é você. (4) Relatar o que der errado pelo canal do app.' },
+    { titulo: 'O que NÃO testar', corpo: 'Não é preciso pagar nada. Se aparecer tela de assinatura, ela está em **modo demonstração** e nenhum valor é cobrado. Não envie senha, número de cartão ou documento de outra pessoa pelo campo de feedback.', destaque: true },
+    { titulo: 'Contato', corpo: 'Dúvida, problema ou vontade de sair do teste: **contato@verimulta.com.br**. O canal de feedback dentro do app chega direto em quem desenvolve.' }
+  ], 2, { y: d.y + 2, tamanhoCorpo: 9.2 });
+
+  d.folha({ eyebrow: 'aceite', titulo: 'Declaração do participante' });
+  d.faixa('Declaro que li este documento, que entendi que o **Verimulta não garante o cancelamento de multas**, que **as consultas às bases oficiais do Detran ainda não estão ligadas**, e que autorizo o tratamento dos meus dados para as finalidades descritas na Parte 2, podendo retirar o consentimento a qualquer momento pelo próprio aplicativo.', { cor: COR.placa, fundo: '#EDF2FA' });
+  d.y += 14;
+  d.tabela({
+    colunas: ['Campo', 'Preencher'],
+    larguras: [1, 2.6],
+    tamanho: 9.5,
+    respiro: 22,
+    zebra: false,
+    linhas: [
+      ['Nome completo', ' '],
+      ['E-mail usado no app', ' '],
+      ['Data', ' '],
+      ['Assinatura', ' ']
+    ],
+    y: d.y
+  });
+  d.nota('Aceite eletrônico também vale: responder ao convite por e-mail ou WhatsApp confirmando a leitura tem o mesmo efeito (MP 2.200-2/2001 e Lei 14.063/2020). Guarde uma cópia. · **Modelo sujeito a revisão jurídica antes da distribuição.**');
+
+  d.capa({
+    fecho: true,
+    eyebrow: 'obrigado por testar',
+    titulo: ['Seu relato é o que faz', '~o produto melhorar.'],
+    subtitulo: 'Cada coisa que te atrapalhar aqui é uma coisa a menos para atrapalhar quem vier depois. Verifica, Brasil.'
+  });
+  return d.gravar();
+}
+
+// ---------------------------------------------------------------- 5
+/** Roteiro do que pedir aos testadores — e do que observar no painel. */
+async function roteiroBeta(arquivo) {
+  const d = new Deck({ arquivo, rodape: `ROTEIRO DO BETA · ${RODAPE}` });
+
+  d.capa({
+    eyebrow: 'beta fechado · roteiro de teste',
+    titulo: ['O que pedir aos 30', '~e o que observar'],
+    subtitulo: 'Um beta sem roteiro vira "achei legal". Este documento traz as tarefas que cada participante deve executar, o que anotar, e o que você acompanha do lado de cá no Painel do Dono.'
+  });
+
+  d.folha({ eyebrow: 'para o participante · 20 minutos', titulo: 'As 8 tarefas do teste' });
+  d.passos([
+    { titulo: '1. Instalar no celular', corpo: 'Abrir o endereço que você recebeu, e instalar pelo navegador (**Android:** três pontinhos » Instalar aplicativo · **iPhone:** Compartilhar » Adicionar à Tela de Início). **Anote:** funcionou de primeira?' },
+    { titulo: '2. Criar a conta', corpo: 'Nome, e-mail, senha e o aceite dos Termos. **Anote:** faltou alguma informação? O aceite ficou claro?' },
+    { titulo: '3. Cadastrar o veículo', corpo: 'Informar a placa. **Anote:** achou onde fazer isso sem ajuda?' },
+    { titulo: '4. Verificar uma multa real', corpo: 'Fotografar a notificação de autuação. **Anote:** o app leu os campos certos? Qual campo saiu errado? (este é o teste mais importante)' },
+  ], { y: d.y + 2, tamanhoCorpo: 9.2 });
+
+  d.folha({ eyebrow: 'para o participante · 20 minutos', titulo: 'As 8 tarefas do teste (continuação)' });
+  d.passos([
+    { titulo: '5. Ler o diagnóstico', corpo: 'Ver o **Índice de Consistência** e as 14 verificações. **Anote:** deu para entender o que significa? Alguém achou que era garantia de cancelamento?' },
+    { titulo: '6. Gerar a Defesa Prévia', corpo: 'Assinar no modo demonstração (não é cobrado) e emitir a defesa em PDF. **Anote:** o PDF abriu? O texto fez sentido? Você protocolaria?' },
+    { titulo: '7. Conferir os pontos da CNH', corpo: 'Ver a pontuação somada e informar a validade da habilitação. **Anote:** o número bateu com o que você sabe?' },
+    { titulo: '8. Mandar o feedback', corpo: 'Perfil » **Enviar feedback do beta**. Uma nota de 1 a 5 e o que atrapalhou. **É a tarefa que não pode faltar.**', cor: COR.sinal }
+  ], { y: d.y + 2, tamanhoCorpo: 9.2 });
+
+  d.folha({ eyebrow: 'para você · painel do dono', titulo: 'O que acompanhar durante os 30 dias' });
+  d.tabela({
+    colunas: ['Indicador', 'Onde ver', 'O que significa'],
+    larguras: [1.1, 1, 2],
+    tamanho: 9,
+    respiro: 11,
+    linhas: [
+      ['Ativação', 'Últimos usuários', 'Quantos dos 30 criaram conta. Abaixo de 20, o problema está no convite ou na instalação.'],
+      ['Primeira auditoria', 'Últimas multas', 'Quantos chegaram a escanear uma multa. É o momento de verdade do produto.'],
+      ['Qualidade do OCR', 'Feedback, tarefa 4', 'Campo lido errado é o defeito mais caro: contamine a defesa e o usuário perde confiança.'],
+      ['Entendimento', 'Feedback, tarefa 5', 'Alguém confundiu o Índice com garantia? Se acontecer mais de uma vez, a interface precisa mudar.'],
+      ['Nota média', 'Feedback do beta', 'Abaixo de 3, pare a divulgação e corrija antes de abrir para mais gente.'],
+      ['Relatos por tela', 'Feedback do beta', 'A tela mais citada é a que mais atrapalha. Comece por ela.']
+    ],
+    y: d.y + 2
+  });
+  d.nota('O Painel do Dono abre em `/admin.html` com a sua chave. O bloco **Feedback do beta** mostra tudo o que chegou, com nota média e a tela mais citada.');
+
+  d.folha({ eyebrow: 'combinado com o grupo', titulo: 'Como conduzir para o teste render' });
+  d.cartoes([
+    { titulo: 'Convide em levas', corpo: 'Comece com **5 pessoas**. Corrija o que elas apontarem. Só então chame as outras 25. Trinta relatos do mesmo defeito não valem mais do que um — e queimam trinta convites.' },
+    { titulo: 'Peça o print do erro', corpo: 'Relato sem contexto não vira correção. Oriente: print da tela + o que estava fazendo antes. O feedback do app já registra a tela e a versão automaticamente.' },
+    { titulo: 'Combine o prazo', corpo: 'Diga que o teste dura de 30 a 40 dias e que você vai voltar a falar com cada um. Quem sabe que será ouvido relata; quem acha que fala no vazio desiste na primeira semana.' },
+    { titulo: 'Não prometa resultado', corpo: 'Nem a você mesmo. O produto entrega **verificação e defesa organizada**, não cancelamento. Se alguém entrar no teste esperando anular a multa, a frustração dele não é defeito do app — é da promessa.', destaque: true }
+  ], 2, { y: d.y + 2, tamanhoCorpo: 9.2 });
+
+  d.capa({
+    fecho: true,
+    eyebrow: 'depois dos 30 dias',
+    titulo: ['Corrigiu o que o beta apontou?', '~Então pode abrir para o Brasil.'],
+    subtitulo: 'Os critérios de liberação estão no Guia de Ativação: Checklist de Homologação de 20 itens, mais as chaves de produção ligadas. Verifica, Brasil.'
+  });
+  return d.gravar();
+}
+
+module.exports = { guiaDeAtivacao, handoffDesenvolvedor, cronogramaGoLive, termoBeta, roteiroBeta };

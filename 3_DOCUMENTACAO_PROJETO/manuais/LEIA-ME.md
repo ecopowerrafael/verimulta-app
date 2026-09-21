@@ -1,6 +1,6 @@
 # Manuais operacionais — versão que bate com o sistema
 
-**Gerado em 20/09/2026** a partir de `ferramentas/`. Três documentos, 26 páginas.
+**Gerado em 21/09/2026** a partir de `ferramentas/`. Cinco documentos, 38 páginas.
 Substituem os cinco que estavam no pacote de entrega (`VERIMULTA_COMPLETO/` no
 Desktop). Os originais **não foram apagados** — compare e troque quando quiser.
 
@@ -11,13 +11,15 @@ npm run docs       # regera os PDFs
 npm run conferir   # confere os fatos dos manuais contra o código (sai 1 se divergir)
 ```
 
-## Os três documentos
+## Os cinco documentos
 
 | Documento | Para quem | O que responde |
 | --- | --- | --- |
 | **Verimulta_Guia_de_Ativacao.pdf** (13 págs) | Rodrigo | Do zero ao primeiro pagamento: teste no PC » Render » domínio » Mercado Pago » e-mail » OCR » teste de fogo » homologação |
 | **Verimulta_Handoff_Desenvolvedor.pdf** (10 págs) | a equipe de desenvolvimento | O que existe no código, a API, o modelo de dados, e os pacotes A/B/C a contratar |
 | **Verimulta_Cronograma_GoLive.pdf** (3 págs) | quem acompanha o projeto | As 4 semanas até o Dia D e o checklist pronto × pendente |
+| **Verimulta_Termo_do_Beta.pdf** (6 págs) | cada participante do teste | O que o app faz, o que **ainda não** faz, quais dados trata e como sair. Entregue antes de convidar |
+| **Verimulta_Roteiro_do_Beta.pdf** (6 págs) | você e os participantes | As 8 tarefas do teste e o que acompanhar no Painel do Dono durante os 30 dias |
 
 ### Consolidação
 
@@ -55,7 +57,7 @@ ela acusa.
 **Guia de Ativação** — webhook em `/v1/webhooks/mercadopago`, com o alerta do
 404 e o aviso de que `WEBHOOK_SECRET` é a assinatura secreta que o painel do MP
 mostra, não um valor inventado · conferência obrigatória do **disco
-persistente** antes de seguir · `npm test` (56 asserções) como etapa do teste
+persistente** antes de seguir · `npm test` (98 asserções) como etapa do teste
 local · grade real de planos (`combo1/2/3`, `empresa_start/pro`, `frota`) ·
 aceite dos Termos obrigatório no cadastro (LGPD) · PDF vindo do servidor ·
 Rascunho de Chaves com 14 variáveis, separando o que o Blueprint preenche do
@@ -72,6 +74,13 @@ correlacionadas + teto de 85%) · **Pacote A dividido entre "feito" e
 **Cronograma Go-Live** — checklist mestre atualizado: o que está construído e
 testado × o que é operação, com as pendências técnicas reais (MFA no admin,
 backup, observabilidade).
+
+## Material do beta
+
+O **Termo do Beta** é um modelo: ele cobre o essencial (sem garantia de
+resultado, quais dados são tratados, base legal do consentimento, como sair),
+mas **precisa do carimbo do advogado antes de ir para os 30 participantes** —
+é o mesmo item que já estava pendente no Checklist de Homologação.
 
 ## Limitação conhecida
 

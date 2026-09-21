@@ -16,9 +16,12 @@ const { limitar, cors, cabecalhos, ipDe } = require('./seguranca');
 const { defesaPDF, extratoPDF } = require('./pdf');
 const { dataLocal, hoje, diasAte } = require('./datas');
 const fs = require('fs');
+const QRCode = require('qrcode');
 
 /** Versão do termo aceito no cadastro — muda quando o texto dos Termos mudar. */
 const VERSAO_TERMOS = process.env.VERSAO_TERMOS || '2026-09-20';
+/** Versão do app, gravada junto de cada feedback do beta. */
+const VERSAO_APP = process.env.VERSAO_APP || '1.0.0-beta';
 
 const SEGREDO = JWT_SECRET;
 const PORTA = process.env.PORT || 3000;
@@ -435,6 +438,62 @@ app.get('/v1/veiculos/:id/resumo', autenticar, (req, res) => {
   });
 });
 
+// ---------- FEEDBACK DO BETA ----------
+/**
+ * Canal de feedback do beta fechado. O objetivo do teste de 30 dias é
+ * descobrir onde o app confunde ou falha — sem um canal dentro do app, o
+ * retorno se perde em conversas de WhatsApp e nunca vira correção.
+ *
+ * Guarda a tela de origem e a versão, para o relato chegar com contexto.
+ */
+app.post('/v1/feedback', autenticar, limitar('feedback', 20, 3600), (req, res) => {
+  const { tela, nota, texto } = req.body || {};
+  const comentario = String(texto || '').trim();
+  const avaliacao = Number(nota);
+  if (!comentario && !Number.isFinite(avaliacao))
+    return res.status(400).json({ erro: 'Escreva um comentário ou dê uma nota.' });
+  if (comentario.length > 4000)
+    return res.status(400).json({ erro: 'Comentário muito longo (máximo 4000 caracteres).' });
+  if (Number.isFinite(avaliacao) && (avaliacao < 1 || avaliacao > 5))
+    return res.status(400).json({ erro: 'nota: de 1 a 5.' });
+
+  const r = db.prepare(`INSERT INTO feedbacks (usuario_id, tela, nota, texto, versao)
+    VALUES (?,?,?,?,?)`).run(
+    req.usuario.id,
+    String(tela || 'não informada').slice(0, 60),
+    Number.isFinite(avaliacao) ? avaliacao : null,
+    comentario || null,
+    VERSAO_APP
+  );
+  res.status(201).json({
+    ok: true, id: r.lastInsertRowid,
+    mensagem: 'Recebido. Obrigado — é isso que faz o app melhorar durante o beta.'
+  });
+});
+
+/** O que o próprio usuário já mandou (transparência: ele vê o que enviou). */
+app.get('/v1/feedback', autenticar, (req, res) => {
+  res.json(db.prepare(`SELECT id, tela, nota, texto, criado_em FROM feedbacks
+    WHERE usuario_id=? ORDER BY id DESC LIMIT 50`).all(req.usuario.id));
+});
+
+/** Painel do Dono: todo o retorno do beta, do mais recente para o mais antigo. */
+app.get('/v1/admin/feedbacks', admin, (req, res) => {
+  const lista = db.prepare(`SELECT f.id, f.tela, f.nota, f.texto, f.versao, f.criado_em,
+      u.nome, u.email
+    FROM feedbacks f LEFT JOIN usuarios u ON u.id = f.usuario_id
+    ORDER BY f.id DESC LIMIT 200`).all();
+  const notas = lista.filter(f => Number.isFinite(f.nota)).map(f => f.nota);
+  res.json({
+    total: lista.length,
+    nota_media: notas.length ? Number((notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(2)) : null,
+    por_tela: Object.entries(lista.reduce((acc, f) => {
+      acc[f.tela] = (acc[f.tela] || 0) + 1; return acc;
+    }, {})).sort((a, b) => b[1] - a[1]),
+    itens: lista
+  });
+});
+
 // ---------- DIREITOS DO TITULAR (LGPD art. 18) ----------
 /** Portabilidade/acesso: devolve tudo o que a plataforma guarda sobre o titular. */
 app.get('/v1/eu/dados', autenticar, (req, res) => {
@@ -490,6 +549,35 @@ app.use((err, req, res, next) => {
   res.status(500).json({ erro: 'Falha no processamento da requisição.' });
 });
 
-app.get('/v1/saude', (req, res) => res.json({ ok: true, servico: 'verimulta-api', versao: '0.1.0' }));
+/**
+ * QR Code do endereço de instalação, para compartilhar com os testadores.
+ * Usa URL_BASE quando definida (produção) e, fora dela, a própria origem da
+ * requisição — assim o QR aberto no servidor de casa já aponta para o
+ * endereço certo, sem ninguém precisar digitar nada.
+ */
+app.get('/v1/qr.svg', async (req, res) => {
+  const base = process.env.URL_BASE || `${req.protocol}://${req.get('host')}`;
+  const destino = `${base.replace(/\/$/, '')}/instalar.html`;
+  try {
+    const svg = await QRCode.toString(destino, { type: 'svg', margin: 1, width: 320,
+      color: { dark: '#0B3C7E', light: '#FFFFFF' } });
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(svg);
+  } catch (e) { res.status(500).json({ erro: 'Falha ao gerar o QR Code.' }); }
+});
+
+/** O endereço que os testadores devem abrir no celular. */
+app.get('/v1/endereco', (req, res) => {
+  const base = process.env.URL_BASE || `${req.protocol}://${req.get('host')}`;
+  res.json({
+    base: base.replace(/\/$/, ''),
+    instalar: `${base.replace(/\/$/, '')}/instalar.html`,
+    app: `${base.replace(/\/$/, '')}/app.html`,
+    qr: '/v1/qr.svg'
+  });
+});
+
+app.get('/v1/saude', (req, res) => res.json({ ok: true, servico: 'verimulta-api', versao: VERSAO_APP }));
 
 app.listen(PORTA, () => console.log(`Verimulta API no ar: http://localhost:${PORTA} (v1)`));

@@ -556,13 +556,41 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
       <div class="linha-item" onclick="go('t-planos')" style="cursor:pointer"><span class="l">Planos e assinatura</span><span class="r">→</span></div>
       <div class="linha-item" onclick="go('t-consultas')" style="cursor:pointer"><span class="l">Consultas oficiais</span><span class="r">→</span></div>
       <div class="linha-item" onclick="go('t-transparencia')" style="cursor:pointer"><span class="l">Como funcionamos · Transparência</span><span class="r">→</span></div>
-      <div class="linha-item" onclick="toast('LGPD: no app real, aqui você exporta ou exclui seus dados.')" style="cursor:pointer"><span class="l">Meus dados (LGPD)</span><span class="r">→</span></div>
+      <div class="linha-item" onclick="go('t-feedback')" style="cursor:pointer"><span class="l">Enviar feedback do beta</span><span class="r">&rarr;</span></div>
+      <div class="linha-item" onclick="baixarMeusDados()" style="cursor:pointer"><span class="l">Baixar meus dados (LGPD)</span><span class="r">&darr;</span></div>
+      <div class="linha-item" onclick="excluirMinhaConta()" style="cursor:pointer"><span class="l" style="color:var(--vicio)">Excluir minha conta</span><span class="r">&rarr;</span></div>
       <div class="linha-item" onclick="window.open('termos.html','_blank')" style="cursor:pointer"><span class="l">Termos de Uso</span><span class="r">→</span></div>
       <div class="linha-item" onclick="window.open('privacidade.html','_blank')" style="cursor:pointer"><span class="l">Política de Privacidade</span><span class="r">→</span></div>
       <div class="linha-item" onclick="cancelarPlano()" style="cursor:pointer"><span class="l" style="color:var(--vicio)">Cancelar assinatura (1 toque)</span><span class="r">→</span></div>
       <div class="linha-item" onclick="sair()" style="cursor:pointer"><span class="l">Sair da conta</span><span class="r">→</span></div>
     </div>
     <p class="rodape-legal">Verimulta é plataforma de autoatendimento: probabilidades são estimativas — a decisão é do órgão julgador. Dados tratados conforme a LGPD. Um produto PRIMECORP BROKERS — CONSULTORIA E INTERMEDIAÇÃO DE NEGÓCIOS LTDA · CNPJ 55.745.297/0001-06 · Sumaré/SP.</p>
+  </div>
+</section>
+
+<!-- FEEDBACK DO BETA -->
+<section class="tela" id="t-feedback">
+  <div class="cab"><button class="volta" onclick="go('t-perfil')">&larr;</button><div><h1>Feedback do beta</h1><div class="sub">O que funcionou e o que atrapalhou</div></div></div>
+  <div class="miolo">
+    <div class="cartao">
+      <h3>Como foi usar o app?</h3>
+      <div class="cz">Sua resposta vai direto para quem desenvolve. Durante o beta, e ela que define o que muda na proxima versao.</div>
+      <div id="fbNotas" style="display:flex;gap:8px;margin:15px 0 4px">
+        <button class="btn mini sec" style="flex:1" onclick="notaFb(1)">1</button>
+        <button class="btn mini sec" style="flex:1" onclick="notaFb(2)">2</button>
+        <button class="btn mini sec" style="flex:1" onclick="notaFb(3)">3</button>
+        <button class="btn mini sec" style="flex:1" onclick="notaFb(4)">4</button>
+        <button class="btn mini sec" style="flex:1" onclick="notaFb(5)">5</button>
+      </div>
+      <div class="cz" id="fbNotaTexto">1 = ruim &middot; 5 = otimo</div>
+      <textarea id="fbTexto" rows="6" placeholder="Conte o que aconteceu. Se algo deu errado, descreva o que voce fez antes do erro." style="width:100%;margin-top:13px;padding:12px;border:1px solid var(--linha);border-radius:12px;font-family:inherit;font-size:14px;resize:vertical"></textarea>
+      <button class="btn" style="margin-top:12px" onclick="enviarFeedback()">Enviar</button>
+      <div class="cz" style="margin-top:10px">Nao escreva senha, numero de cartao ou dado de outra pessoa.</div>
+    </div>
+    <div class="cartao" id="fbEnviadosCard" style="display:none">
+      <h3>O que voce ja enviou</h3>
+      <div id="fbEnviados"></div>
+    </div>
   </div>
 </section>
 
@@ -606,6 +634,63 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
 </div>
 
 <script>
+/* ===== Feedback do beta e direitos do titular =====
+   O beta de 30 dias so vale se o retorno chegar. E a linha "Meus dados (LGPD)"
+   mostrava um aviso dizendo "no app real, aqui voce exporta" — as rotas ja
+   existem, entao agora ela exporta de verdade. */
+let FB_NOTA = null;
+function notaFb(n){
+  FB_NOTA = n;
+  document.querySelectorAll('#fbNotas button').forEach((b,i)=>{
+    b.classList.toggle('amarelo', i+1 === n);
+    b.classList.toggle('sec', i+1 !== n);
+  });
+  document.getElementById('fbNotaTexto').textContent =
+    ['','Ruim','Fraco','Deu para usar','Bom','Otimo'][n] + ' (' + n + ' de 5)';
+}
+async function enviarFeedback(){
+  const texto = document.getElementById('fbTexto').value.trim();
+  if(!texto && !FB_NOTA){ toast('Dê uma nota ou escreva um comentário.'); return; }
+  const r = await api('/v1/feedback', { method:'POST', json:{ tela: APP.telaAtual || 't-feedback', nota: FB_NOTA, texto } });
+  if(!r.ok){ toast(r.dados.erro || 'Não foi possível enviar.'); return; }
+  document.getElementById('fbTexto').value = '';
+  FB_NOTA = null;
+  document.querySelectorAll('#fbNotas button').forEach(b=>{ b.classList.remove('amarelo'); b.classList.add('sec'); });
+  document.getElementById('fbNotaTexto').textContent = '1 = ruim · 5 = ótimo';
+  toast('Obrigado! Recebido.');
+  carregarFeedbacks();
+}
+async function carregarFeedbacks(){
+  const r = await api('/v1/feedback');
+  if(!r.ok) return;
+  const card = document.getElementById('fbEnviadosCard');
+  card.style.display = r.dados.length ? 'block' : 'none';
+  document.getElementById('fbEnviados').innerHTML = r.dados.map(f =>
+    '<div class="linha-item"><span class="l">' + dataBR(f.criado_em) +
+    (f.nota ? ' · nota ' + f.nota : '') + '</span><span class="r">' +
+    esc((f.texto || '').slice(0, 40)) + '</span></div>').join('');
+}
+async function baixarMeusDados(){
+  toast('Preparando o arquivo…');
+  try{
+    const r = await fetch(API + '/v1/eu/dados', { headers:{ 'Authorization':'Bearer ' + APP.token } });
+    if(!r.ok) throw new Error();
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'meus-dados-verimulta.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  }catch(e){ toast('Não foi possível baixar agora.'); }
+}
+async function excluirMinhaConta(){
+  if(!confirm('Excluir sua conta apaga veículos, multas e defesas, e não tem volta. Confirma?')) return;
+  const r = await api('/v1/eu/conta', { method:'DELETE' });
+  if(!r.ok){ toast(r.dados.erro || 'Não foi possível excluir.'); return; }
+  toast('Conta excluída.');
+  setTimeout(()=>sair(), 1500);
+}
+
 /* ===== Telas que dependem de dado real =====
    Estas telas mostravam valores fixos no HTML ("IPVA quitado", "4/40 pts",
    "VW Nivus 2024") — iguais para qualquer pessoa. Agora vêm da API, e o que a
@@ -728,6 +813,8 @@ function go(id){
   if(id === 't-cnh') carregarCnh();
   if(id === 't-veiculo') carregarVeiculo();
   if(id === 't-debitos') carregarDebitos();
+  if(id === 't-feedback') carregarFeedbacks();
+  APP.telaAtual = id;     // vai junto do feedback, para saber de onde veio
 }
 function toast(msg){
   const t = document.getElementById('toast');

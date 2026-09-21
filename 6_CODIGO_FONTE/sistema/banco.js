@@ -42,6 +42,12 @@ CREATE TABLE IF NOT EXISTS recursos (
   desfecho TEXT,                          -- deferido | indeferido (calibração)
   criado_em TEXT DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS feedbacks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  usuario_id INTEGER REFERENCES usuarios(id),
+  tela TEXT, nota INTEGER, texto TEXT, versao TEXT,
+  criado_em TEXT DEFAULT (datetime('now'))
+);
 CREATE INDEX IF NOT EXISTS ix_multa_user ON multas(usuario_id);
 CREATE INDEX IF NOT EXISTS ix_veic_user ON veiculos(usuario_id);
 CREATE INDEX IF NOT EXISTS ix_rec_user ON recursos(usuario_id);

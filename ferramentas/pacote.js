@@ -35,6 +35,86 @@ function copiar(de, para) {
 }
 
 // ------------------------------------------------------------------ atalhos
+const SERVIDOR24H = `@echo off
+title Verimulta - Servidor 24h (deixe esta janela aberta)
+cd /d "%~dp0sistema"
+if not exist "node_modules" goto semdeps
+if not exist ".env" goto semconfig
+echo.
+echo  ============================================================
+echo   VERIMULTA - MODO SERVIDOR 24 HORAS
+echo  ============================================================
+echo.
+echo   Diferenca para o 3-INICIAR: nao abre navegador e, se o
+echo   servidor cair, ele sobe de novo sozinho em 5 segundos.
+echo.
+echo   Para o app iniciar junto com o Windows:
+echo     1. Aperte Win+R, digite  shell:startup  e Enter
+echo     2. Arraste este arquivo para dentro da pasta que abriu
+echo        (segurando Alt, para criar um atalho)
+echo.
+echo   Para PARAR de vez: feche esta janela.
+echo.
+echo  ============================================================
+echo.
+:loop
+node servidor.js
+echo.
+echo   [%date% %time%] O servidor parou. Subindo de novo em 5s...
+echo   (Se isto repetir sem parar, rode 1-INSTALAR.cmd e veja o erro.)
+timeout /t 5 /nobreak >nul
+goto loop
+
+:semdeps
+echo   Rode primeiro o 1-INSTALAR.cmd
+pause
+exit /b 1
+
+:semconfig
+echo   Rode primeiro o 2-CONFIGURAR.cmd
+pause
+exit /b 1
+`;
+
+const LINKCELULAR = `@echo off
+title Verimulta - Link para o celular
+cd /d "%~dp0"
+echo.
+echo  ============================================================
+echo   LINK PARA INSTALAR NO CELULAR
+echo  ============================================================
+echo.
+echo   Na MESMA rede wi-fi deste computador, o endereco e:
+echo.
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4"') do (
+  for /f "tokens=* delims= " %%b in ("%%a") do echo        http://%%b:3000/instalar.html
+)
+echo.
+echo   Abra esse endereco no celular (ou leia o QR Code que
+echo   aparece na pagina) e siga os passos para Android ou iPhone.
+echo.
+echo  ------------------------------------------------------------
+echo   PARA QUEM ESTA FORA DA SUA REDE
+echo  ------------------------------------------------------------
+echo   O endereco acima so funciona para quem esta no mesmo
+echo   wi-fi. Para os 30 participantes acessarem de casa, o
+echo   servidor precisa de um endereco publico na internet:
+echo.
+echo     - dominio apontado para o seu IP + liberacao da porta
+echo       no roteador, OU
+echo     - um servico de tunel (Cloudflare Tunnel, ngrok), OU
+echo     - hospedar no Render, como explica o Guia de Ativacao.
+echo.
+echo   Depois de ter o endereco publico, coloque ele em
+echo   sistema\\.env na linha URL_BASE - o QR Code passa a
+echo   apontar para ele sozinho.
+echo.
+echo  ============================================================
+echo.
+start "" http://localhost:3000/instalar.html
+pause
+`;
+
 const INSTALAR = `@echo off
 title Verimulta - Passo 1 - Instalar
 cd /d "%~dp0sistema"
@@ -294,6 +374,8 @@ PARA COMECAR A TESTAR: 3 CLIQUES
   Depois disso:
 
     4-PAINEL-DO-DONO.cmd   abre o painel e lembra a sua chave
+    5-SERVIDOR-24H.cmd     modo servidor: sobe sozinho se cair
+    6-LINK-DO-CELULAR.cmd  mostra o endereco para instalar no celular
     PARAR.cmd              desliga o servidor
 
   So o 1-INSTALAR precisa de internet e so roda uma vez.
@@ -305,7 +387,9 @@ O QUE TEM AQUI DENTRO
               motor de auditoria, pagamentos, e-mails e os testes
   site/       a vitrine estatica (opcional, para o Netlify)
   manuais/    Guia de Ativacao (leia este quando for para o ar),
-              Handoff do Desenvolvedor e Cronograma Go-Live
+              Handoff do Desenvolvedor, Cronograma Go-Live e o
+              material do beta: Termo de Participacao e Roteiro
+              de Teste para entregar aos participantes
 
 
 O QUE VOCE VAI VER
@@ -335,6 +419,21 @@ IMPORTANTE ENQUANTO VOCE TESTA
 
   * ${assercoes} verificacoes automaticas rodam no passo 1. Se alguma
     falhar, nao coloque no ar: tire print e mande para o desenvolvedor.
+
+
+PARA OS PARTICIPANTES DO BETA TESTAREM NO CELULAR
+-----------------------------------------------------------------------
+  O aplicativo instala pelo navegador, sem loja: a pessoa abre o
+  endereco e usa "Adicionar a tela inicial". O atalho
+  6-LINK-DO-CELULAR.cmd mostra o endereco e abre a pagina com o
+  QR Code pronto para compartilhar.
+
+  ATENCAO: o endereco de wi-fi local so funciona para quem esta na
+  mesma rede. Para os 30 acessarem de casa, o servidor precisa de um
+  endereco publico (dominio + porta liberada, tunel ou Render).
+
+  Antes de convidar, entregue os dois documentos da pasta manuais:
+  Verimulta_Termo_do_Beta.pdf e Verimulta_Roteiro_do_Beta.pdf.
 
 
 PARA COLOCAR NO AR DE VERDADE E COMECAR A RECEBER
@@ -378,6 +477,8 @@ function montar(destino, { assercoes = 72 } = {}) {
   escrever('2-CONFIGURAR.cmd', CONFIGURAR);
   escrever('3-INICIAR.cmd', INICIAR);
   escrever('4-PAINEL-DO-DONO.cmd', PAINEL);
+  escrever('5-SERVIDOR-24H.cmd', SERVIDOR24H);
+  escrever('6-LINK-DO-CELULAR.cmd', LINKCELULAR);
   escrever('PARAR.cmd', PARAR);
   escrever('configurar.js', CONFIGURAR_JS);
 

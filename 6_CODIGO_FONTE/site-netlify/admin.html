@@ -59,6 +59,8 @@ tr:last-child td{border-bottom:none}
       <div class="cartao"><h2>Últimos usuários</h2><table id="tUsuarios"><tr><th>Nome</th><th>E-mail</th><th>Plano</th><th>Desde</th></tr></table></div>
       <div class="cartao"><h2>Movimentações de pagamento</h2><table id="tPagamentos"><tr><th>Evento</th><th>Plano</th><th>Valor</th><th>Status</th></tr></table></div>
       <div class="cartao"><h2>Últimas multas auditadas</h2><table id="tMultas"><tr><th>AIT</th><th>Órgão</th><th>Valor</th><th>Origem</th></tr></table></div>
+      <div class="cartao"><h2>Feedback do beta <span id="fbResumo" style="font-weight:400;font-size:13px;color:#5B6570"></span></h2>
+        <table id="tFeedback"><tr><th>Quando</th><th>Quem</th><th>Tela</th><th>Nota</th><th>O que disse</th></tr></table></div>
       <div class="cartao">
         <h2>E-mails e tarefas</h2>
         <table id="tEmails"><tr><th>Tipo</th><th>Para</th><th>Status</th></tr></table>
@@ -91,6 +93,26 @@ async function api(rota, metodo='GET'){
   if(r.status === 401) throw new Error('Chave incorreta.');
   return r.json();
 }
+/* O beta so vale se o retorno chegar aqui. Escapa o texto: quem escreve e o
+   usuario, e isto entra no HTML do painel. */
+function esc(v){ return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function carregarFeedback(){
+  try{
+    const r = await fetch('/v1/admin/feedbacks', { headers: { 'X-Admin-Secret': SEG } });
+    if(!r.ok) return;
+    const d = await r.json();
+    document.getElementById('fbResumo').textContent =
+      d.total + ' relato(s)' + (d.nota_media ? ' · nota média ' + d.nota_media : '') +
+      (d.por_tela.length ? ' · mais citada: ' + d.por_tela[0][0] : '');
+    d.itens.forEach(f => linha('tFeedback', [
+      horaBR(f.criado_em),
+      esc(f.nome || '—'),
+      esc(f.tela || '—'),
+      f.nota ? '<b>' + f.nota + '</b>/5' : '—',
+      esc(f.texto || '—')
+    ]));
+  }catch(e){}
+}
 function linha(t, celulas){ const tr = document.createElement('tr'); tr.innerHTML = celulas.map(c=>'<td>'+c+'</td>').join(''); document.getElementById(t).appendChild(tr); }
 async function carregar(){
   SEG = document.getElementById('segredo').value.trim();
@@ -101,7 +123,8 @@ async function carregar(){
     kUsuarios.textContent = d.usuarios; kAssinantes.textContent = d.assinantes;
     kMRR.textContent = 'R$ ' + d.mrr.toFixed(2).replace('.',','); 
     kMultas.textContent = d.multas; kRecursos.textContent = d.recursos;
-    ['tUsuarios','tPagamentos','tMultas','tEmails','tVarreduras'].forEach(id=>{ const t=document.getElementById(id); while(t.rows.length>1)t.deleteRow(1); });
+    ['tUsuarios','tPagamentos','tMultas','tEmails','tVarreduras','tFeedback'].forEach(id=>{ const t=document.getElementById(id); while(t.rows.length>1)t.deleteRow(1); });
+    carregarFeedback();
     d.ultimos_usuarios.forEach(u=>linha('tUsuarios',[u.nome,u.email,`<span class="pill ${u.plano==='gratis'?'gratis':'pro'}">${u.plano}</span>`,dataBR(u.criado_em)]));
     d.pagamentos.forEach(p=>linha('tPagamentos',[p.evento,p.plano||'—','R$ '+(p.valor||0).toFixed(2).replace('.',','),`<span class="pill ${['authorized','approved'].includes(p.status)?'ok':'pend'}">${p.status}</span>`]));
     d.ultimas_multas.forEach(m=>linha('tMultas',[m.ait||'—',m.orgao||'—','R$ '+(m.valor||0).toFixed(2).replace('.',','),m.origem]));
