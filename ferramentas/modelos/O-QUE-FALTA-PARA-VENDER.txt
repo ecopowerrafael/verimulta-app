@@ -1,0 +1,184 @@
+VERIMULTA — O QUE FALTA PARA VENDER (100% FUNCIONAL)
+=======================================================================
+PRIMECORP BROKERS — CONSULTORIA E INTERMEDIAÇÃO DE NEGÓCIOS LTDA
+CNPJ 55.745.297/0001-06 · Lista atualizada em 21/09/2026
+
+Este arquivo é a lista honesta do que separa o sistema de hoje de um
+produto vendável ao público. Está em ordem: o que bloqueia o beta vem
+antes do que bloqueia a venda, que vem antes do que é melhoria.
+
+Legenda:   [VOCÊ]  depende de conta, contrato ou decisão sua
+           [DEV]   é código — já está especificado no Handoff
+           [FEITO] pronto e testado, listado para não perder de vista
+
+
+=======================================================================
+A. BLOQUEIA O BETA COM 30 PESSOAS
+=======================================================================
+
+[VOCÊ] 1. Endereço fixo com HTTPS
+       Hoje o app só responde na sua rede. O iPhone exige HTTPS para
+       instalar na tela de início.
+       Como fazer: conta em dash.cloudflare.com > Add a site
+       (verimulta.com.br) > trocar os 2 nameservers no Registro.br >
+       clicar em 8-ENDERECO-FIXO.cmd. Conferido em 21/09: os NS ainda
+       são os do Registro.br (a.auto.dns.br / b.auto.dns.br) — a troca
+       ainda não foi feita.
+       Resultado: https://beta.verimulta.com.br, que não muda mais.
+
+[VOCÊ] 2. E-mail transacional (SMTP)
+       Sem isso NÃO sai alerta de prazo nem e-mail de boas-vindas — e o
+       alerta de prazo é a promessa central do produto.
+       Como fazer: Zoho Mail (grátis) ou Locaweb > criar
+       contato@verimulta.com.br > senha de aplicativo > preencher no
+       sistema\.env: SMTP_HOST, SMTP_PORT=465, SMTP_USER, SMTP_PASS,
+       EMAIL_FROM. Teste: criar conta no app e ver o e-mail chegar.
+
+[VOCÊ] 3. Advogado nos Termos, na Privacidade e no Termo do Beta
+       Os textos existem (termos.html, privacidade.html e
+       manuais/Verimulta_Termo_do_Beta.pdf) mas são MODELO. Antes de
+       entregar a 30 pessoas reais, precisam do carimbo jurídico.
+
+[VOCÊ] 4. Backup do banco
+       Tudo (usuários, multas, defesas, feedback) fica em
+       sistema\verimulta.db. Sem cópia, um arquivo corrompido apaga o
+       beta inteiro. Mínimo: cópia diária do arquivo para outro disco
+       ou nuvem, e UMA restauração testada de verdade.
+
+
+=======================================================================
+B. BLOQUEIA A VENDA (COBRAR DE VERDADE)
+=======================================================================
+
+[VOCÊ] 5. Mercado Pago
+       O ciclo pagar » liberar » cancelar está pronto e testado em modo
+       demonstração. Para cobrar:
+       a) conta PJ no Mercado Pago com o CNPJ da PrimeCorp;
+       b) Access Token de produção (APP_USR-...) em MP_ACCESS_TOKEN;
+       c) webhook cadastrado no painel do MP EXATAMENTE em
+          https://SEU-DOMINIO/v1/webhooks/mercadopago;
+       d) WEBHOOK_SECRET = a assinatura secreta que o painel do MP
+          mostra ao salvar o webhook (NUNCA um valor inventado — senão
+          o cliente paga e o plano não libera);
+       e) GATEWAY=mercadopago no .env;
+       f) teste de fogo: assinar o Combo 01 com o seu cartão, ver o
+          plano ativar em < 1 min, cancelar em 1 toque.
+
+[VOCÊ] 6. Leitura automática da foto (OCR)
+       Hoje a foto sobe mas a leitura NÃO roda: falta GOOGLE_VISION_KEY.
+       O app avisa e oferece digitar à mão (funciona igual). Para ligar:
+       console.cloud.google.com > ativar Cloud Vision API > chave de
+       API > GOOGLE_VISION_KEY no .env. 1.000 leituras/mês grátis.
+
+[VOCÊ] 7. Domínio e site definitivos
+       www.verimulta.com.br apontando para o sistema (ou o site estático
+       da pasta site/ no Netlify), com SSL. Hoje o domínio está
+       registrado e vazio.
+
+[VOCÊ] 8. Contador
+       CNAE 62.02-3/00 (desenvolvimento e licenciamento de software) e
+       emissão de NFS-e por assinatura. Sem isso não há como faturar.
+
+[VOCÊ] 9. INPI
+       Depositar a marca VERIMULTA nas classes 42 e 45. Prioridade
+       antes de qualquer divulgação pública.
+
+
+=======================================================================
+C. PARA O APP PUXAR DADOS OFICIAIS (o que o produto promete)
+=======================================================================
+
+[VOCÊ] 10. Credenciamento SENATRAN + Serpro + GCC
+       O app NÃO consulta Detran, RENAVAM, RENACH nem RENAINF. Isso não
+       se compra: é autorizado. São três peças, nesta ordem:
+         1) TAAD pela plataforma credencia.serpro.gov.br
+         2) contrato do serviço Consulta Online Senatran (Serpro)
+         3) contrato com uma GCC credenciada
+       Você já tem o e-CNPJ, que é o pré-requisito. O passo a passo
+       completo está em manuais/Verimulta_Credenciamento_SENATRAN_Serpro.docx
+       Quando as credenciais chegarem, preencha o bloco FONTE_HTTP_* no
+       sistema\.env e a consulta liga sem programador. Confira em
+       /v1/fontes: a fonte deve aparecer como LIGADA e oficial.
+
+[FEITO] Enquanto isso, o sistema NÃO inventa: veículo, IPVA,
+       licenciamento, recall, dívida ativa e pontuação oficial aparecem
+       como "ainda não conectado". A única fonte externa ligada hoje é a
+       Tabela FIPE (pública).
+
+       NÃO contratar revendedor de "API de placa" que raspa portal
+       público: é a linha vermelha do projeto e péssima sinalização
+       enquanto se pleiteia a autorização.
+
+
+=======================================================================
+D. PENDÊNCIAS TÉCNICAS (Pacote A do Handoff — para o desenvolvedor)
+=======================================================================
+
+[DEV] 11. MFA (segundo fator) no Painel do Dono — hoje só a ADMIN_SECRET.
+[DEV] 12. Observabilidade: Sentry/logs estruturados e REPROCESSO de
+          webhook falho. Hoje uma notificação de pagamento perdida é
+          silenciosa.
+[DEV] 13. Backup automatizado com restore testado (a versão manual do
+          item 4 é o mínimo; esta é a definitiva).
+[DEV] 14. Teste de carga: 200 usuários no funil scan » diagnóstico,
+          p95 < 2 s, zero erro 5xx.
+[DEV] 15. Rate limit em Redis ao rodar mais de uma instância (hoje é
+          em memória, correto para 1 processo).
+[DEV] 16. Migração SQLite » Postgres quando passar de algumas centenas
+          de usuários ativos.
+[DEV] 17. Web Push (VAPID): alerta de prazo no celular, além do e-mail,
+          com opt-in explícito.
+[DEV] 18. Google Play via TWA (PWABuilder). Hoje instala pelo navegador,
+          que já funciona em Android e iPhone.
+[DEV] 19. Lighthouse >= 90 e revisão de acessibilidade.
+[DEV] 20. CI com npm test obrigatório em todo PR.
+
+
+=======================================================================
+E. O QUE JÁ ESTÁ PRONTO E TESTADO (não perder de vista)
+=======================================================================
+
+[FEITO] Cadastro com aceite LGPD gravado (data, IP, versão do termo)
+[FEITO] Leitura do documento » CONFERÊNCIA pelo usuário » gravação.
+        (O defeito em que toda pessoa recebia a mesma multa fixa foi
+        corrigido em 21/09 e está travado por teste.)
+[FEITO] Motor A1–A14 com base legal; jurimetria com teto de 85% e
+        teses correlacionadas; Índice de Consistência na manchete
+[FEITO] Defesa Prévia e Extrato de Auditoria em PDF timbrado, no servidor
+[FEITO] Pontos da CNH somados das multas cadastradas (CTB art. 261,
+        limites 20/30/40) e validade da CNH informada pelo titular
+[FEITO] Pagamentos: checkout, webhook com HMAC + reconsulta, cancelamento
+[FEITO] Paywall no servidor; grade combo1/2/3 + empresa + frota
+[FEITO] Alertas de prazo 7/3/1 dias no fuso do Brasil (dependem do SMTP)
+[FEITO] Feedback do beta dentro do app + Painel do Dono
+[FEITO] Exportação e exclusão de conta (LGPD art. 18)
+[FEITO] Instalação no celular (PWA) com QR Code; túnel HTTPS
+[FEITO] Segurança: rate limit, CORS por allowlist, upload validado,
+        XSS escapado, segredos fora do código, IDOR fechado
+[FEITO] 119 verificações automáticas (npm test) e manuais gerados por
+        código, conferidos contra o sistema
+
+
+=======================================================================
+F. DECISÕES REGISTRADAS
+=======================================================================
+
+- Grade de preços oficial: Combo 01 R$ 29,90 · Combo 02 R$ 39,90 ·
+  Combo 03 R$ 49,90 · Empresa Start R$ 89,90 · Empresa Pro R$ 149,90 ·
+  Frota sob proposta.
+- Consulta de placa pública: passou a responder "consulta oficial não
+  conectada" em vez de multa fabricada (decisão revertida em 21/09 por
+  causa dos usuários reais do beta).
+- Nunca inventar multa. Nunca prometer cancelamento. Estimativa é
+  sempre estimativa: quem decide é o órgão julgador.
+
+
+=======================================================================
+COMO USAR ESTA LISTA
+=======================================================================
+
+Ordem sugerida: A (esta semana) » B.5, B.6 e B.8 (antes do dia 15/10)
+» C.10 (começar já; leva semanas) » D com o desenvolvedor.
+
+A cada item concluído, risque aqui e rode npm test na pasta sistema.
+Lançamento previsto: 15 a 20 de outubro de 2026.

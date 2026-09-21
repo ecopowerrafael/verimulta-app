@@ -493,6 +493,10 @@ PARA COLOCAR NO AR DE VERDADE E COMECAR A RECEBER
   primeiro pagamento, com a lista de todas as chaves a preencher e o
   Checklist de Homologacao de 20 itens.
 
+  O QUE AINDA FALTA, em ordem de prioridade, esta no arquivo
+  O-QUE-FALTA-PARA-VENDER.txt, aqui nesta pasta. Risque ali conforme
+  for concluindo.
+
 
 A REGRA DA CASA
 -----------------------------------------------------------------------
@@ -524,6 +528,10 @@ function montar(destino, { assercoes = 72 } = {}) {
 
   // BOM no .txt para o Bloco de Notas mostrar os acentos certos.
   escrever('COMECE-AQUI.txt', comeceAqui(hoje, assercoes), true);
+  // A lista honesta do que separa o sistema de hoje de um produto vendavel.
+  // Vive em modelos/ e vai junto do pacote para nao ficar so no repositorio.
+  escrever('O-QUE-FALTA-PARA-VENDER.txt',
+    fs.readFileSync(path.join(__dirname, 'modelos', 'O-QUE-FALTA-PARA-VENDER.txt'), 'utf8'), true);
   escrever('1-INSTALAR.cmd', INSTALAR);
   escrever('2-CONFIGURAR.cmd', CONFIGURAR);
   escrever('3-INICIAR.cmd', INICIAR);
