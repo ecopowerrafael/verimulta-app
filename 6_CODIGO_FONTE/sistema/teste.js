@@ -166,5 +166,39 @@ ok(/origem: 'multas cadastradas neste aplicativo'/.test(servidorTxt),
    'a resposta declara de onde vem o numero (nao e consulta ao Detran)');
 ok(/dataLocal\(-365\)/.test(servidorTxt), 'janela de 12 meses');
 
+console.log('\n[13] Camada de fontes externas');
+// O bloqueio para puxar dado oficial e contratual, nao tecnico: RENAVAM,
+// RENACH e RENAINF exigem autorizacao no SENATRAN mais contrato com o Serpro.
+// A resposta de engenharia e falar com uma INTERFACE, nao com um fornecedor.
+// Estes testes garantem que a interface funciona e que fonte nenhuma pode
+// devolver dado inventado quando esta desligada.
+const fontes = require('./fontes');
+const estadoFontes = fontes.estado();
+ok(estadoFontes.length >= 3, `${estadoFontes.length} fontes registradas`);
+ok(estadoFontes.every(f => typeof f.ativa === 'boolean' && Array.isArray(f.fornece)),
+   'toda fonte declara se esta ativa e o que fornece');
+const naoAtivas = estadoFontes.filter(f => !f.ativa);
+ok(naoAtivas.every(f => typeof f.motivo === 'string' && f.motivo.length > 10),
+   'fonte desligada explica o motivo em vez de sumir calada');
+
+const demo = estadoFontes.find(f => f.nome === 'demonstracao');
+ok(demo && !demo.ativa, 'fonte de demonstracao vem DESLIGADA por padrao');
+
+const httpFonte = estadoFontes.find(f => f.nome === 'http');
+ok(httpFonte && !httpFonte.ativa && /SENATRAN|Serpro|FONTE_HTTP_URL/.test(httpFonte.motivo),
+   'fonte configuravel diz o que falta para ligar');
+
+console.log('\n[14] Tradutor da fonte configuravel');
+const cfgHttp = require('./fontes/configuravel');
+ok(cfgHttp.preencher('https://x.br/v/{placa}', { placa: 'ABC1D23' }, true) === 'https://x.br/v/ABC1D23',
+   'marcadores da URL sao trocados e codificados');
+ok(cfgHttp.pega('a.b.c', { a: { b: { c: 7 } } }) === 7, 'caminho com pontos encontra o valor');
+ok(cfgHttp.pega('a.x.c', { a: {} }) === undefined, 'caminho ausente devolve undefined, nao estoura');
+const traduzido = cfgHttp.traduzir({ numeroAit: 'T1', valorInfracao: 130.16 },
+                               { ait: 'numeroAit', valor: 'valorInfracao' });
+ok(traduzido.ait === 'T1' && traduzido.valor === 130.16, 'MAPA renomeia os campos do fornecedor');
+const listaTraduzida = cfgHttp.traduzir([{ numeroAit: 'A' }, { numeroAit: 'B' }], { ait: 'numeroAit' });
+ok(Array.isArray(listaTraduzida) && listaTraduzida[1].ait === 'B', 'MAPA funciona sobre lista');
+
 console.log(`\n=== ${falhas} falha(s) ===`);
 process.exit(falhas ? 1 : 0);

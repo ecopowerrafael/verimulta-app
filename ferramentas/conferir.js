@@ -80,8 +80,11 @@ if (!problemas) passar('nenhum plano vendido no manual é desconhecido pelo chec
 // ---------------------------------------------------------------- variáveis
 console.log('\n[3] Variáveis de ambiente citadas são lidas pelo código');
 const fontes = ['servidor.js', 'pagamentos.js', 'emails.js', 'ocr.js', 'monitor.js', 'banco.js',
-  'config.js', 'seguranca.js', 'planos.js', 'pdf.js', 'datas.js']
-  .map(f => ler(SISTEMA, f)).join('\n') + renderYaml;
+  'config.js', 'seguranca.js', 'planos.js', 'pdf.js', 'datas.js', 'ambiente.js']
+  .map(f => ler(SISTEMA, f)).join('\n')
+  + ['index.js', 'fipe.js', 'configuravel.js', 'demonstracao.js']
+      .map(f => ler(SISTEMA, 'fontes', f)).join('\n')
+  + renderYaml;
 const IGNORAR = new Set(['DEMO_NOVA_MULTA']);   // citada só para dizer "nunca use"
 const varsCitadas = new Set();
 for (const m of manuais.matchAll(/`([A-Z][A-Z0-9_]{3,})`/g)) varsCitadas.add(m[1]);

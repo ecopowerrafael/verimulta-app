@@ -10,6 +10,7 @@ const pagamentos = require('./pagamentos');
 const { extrairCampos, ocrImagem } = require('./ocr');
 const emails = require('./emails');
 const monitor = require('./monitor');
+const fontes = require('./fontes');
 const { PLANOS, planoDe, precoDe, chaveDe } = require('./planos');
 const { JWT_SECRET, ADMIN_SECRET, conferirSegredo, PRODUCAO } = require('./config');
 const { limitar, cors, cabecalhos, ipDe } = require('./seguranca');
@@ -436,6 +437,64 @@ app.get('/v1/veiculos/:id/resumo', autenticar, (req, res) => {
       enquanto_isso: 'Envie a notificação pelo scan: a auditoria e a defesa funcionam por documento.'
     }
   });
+});
+
+// ---------- FONTES DE DADOS ----------
+/**
+ * Retrato honesto do que está ligado. O app usa isto para dizer, em cada
+ * tela, se aquele número veio de uma base oficial, de fonte pública ou de
+ * lugar nenhum — em vez de deixar o usuário supor.
+ */
+app.get('/v1/fontes', (req, res) => {
+  const estado = fontes.estado();
+  res.json({
+    fontes: estado,
+    oficiais_ligadas: estado.filter(f => f.ativa && f.oficial).length,
+    resumo: estado.some(f => f.ativa && f.oficial)
+      ? 'Consulta oficial ligada.'
+      : 'Nenhuma base oficial ligada: RENAVAM, RENACH e RENAINF dependem de '
+        + 'autorização no SENATRAN e contrato com o Serpro. O app funciona por '
+        + 'documento enviado pelo usuário.'
+  });
+});
+
+/** Marcas da tabela FIPE (carros, motos ou caminhoes). */
+app.get('/v1/fipe/marcas', limitar('fipe', 60, 600), async (req, res) => {
+  const r = await fontes.consultar('valor_fipe', { tipo: req.query.tipo || 'carros' });
+  if (!r.ok) return res.status(503).json({ erro: r.mensagem || 'Tabela FIPE indisponível agora.' });
+  res.json({ origem: r.rotulo, marcas: r.dados.marcas });
+});
+
+/** Modelos de uma marca. */
+app.get('/v1/fipe/modelos/:marca', limitar('fipe', 60, 600), async (req, res) => {
+  const r = await fontes.consultar('valor_fipe', { tipo: req.query.tipo || 'carros', marca: req.params.marca });
+  if (!r.ok) return res.status(503).json({ erro: r.mensagem || 'Tabela FIPE indisponível agora.' });
+  res.json({ origem: r.rotulo, modelos: r.dados.modelos });
+});
+
+/** Preço de referência por código FIPE. */
+app.get('/v1/fipe/preco/:codigo', limitar('fipe', 60, 600), async (req, res) => {
+  const r = await fontes.consultar('valor_fipe', { codigo_fipe: req.params.codigo });
+  if (!r.ok) return res.status(503).json({ erro: 'Não conseguimos consultar a FIPE agora. Tente mais tarde.' });
+  res.json({ origem: r.rotulo, precos: r.dados.precos });
+});
+
+/**
+ * Consulta de veículo na fonte externa configurada.
+ * Sem fornecedor configurado devolve 503 dizendo o que falta — nunca um
+ * resultado de mentira para a tela ter o que mostrar.
+ */
+app.get('/v1/veiculos/:id/consulta-externa', autenticar, limitar('externa', 30, 600), async (req, res) => {
+  const v = db.prepare('SELECT * FROM veiculos WHERE id=? AND usuario_id=?').get(req.params.id, req.usuario.id);
+  if (!v) return res.status(404).json({ erro: 'Veículo não encontrado.' });
+  const r = await fontes.consultar('veiculo', { placa: v.placa, renavam: v.renavam || '' });
+  if (!r.ok) {
+    return res.status(503).json({
+      consultado: false, erro: r.erro, mensagem: r.mensagem,
+      o_que_falta: 'Configurar uma fonte autorizada (ver /v1/fontes).'
+    });
+  }
+  res.json({ consultado: true, origem: r.rotulo, oficial: r.oficial, dados: r.dados });
 });
 
 // ---------- FEEDBACK DO BETA ----------

@@ -22,38 +22,27 @@ db.exec(`CREATE TABLE IF NOT EXISTS varreduras (
 try { db.exec("ALTER TABLE multas ADD COLUMN detectada_por TEXT"); } catch (e) {}
 
 // -------- FONTES --------
-const FONTES = {
-  /** Fonte de demonstração: detecta 1 multa simulada por placa SOMENTE se DEMO_NOVA_MULTA=true. */
-  demo: async (placa) => {
-    if (process.env.DEMO_NOVA_MULTA !== 'true') return [];
-    return [{
-      ait: 'D' + String(Math.abs(hash(placa)) % 90000000 + 10000000),
-      orgao: 'DETRAN-SP (demonstração)',
-      enquadramento: '7455-0',
-      descricao: 'Excesso de velocidade até 20% (detecção simulada)',
-      valor: 130.16, pontos: 4, origem: 'radar',
-      data_infracao: hoje(-3), data_notificacao: hoje(0), prazo_defesa: hoje(27)
-    }];
-  },
-  /** PLUG: integração Detran mediante convênio — implementar consulta oficial aqui. */
-  detran: async () => [],
-  /** PLUG: SNE/Senatran mediante adesão — implementar aqui. */
-  sne: async () => []
-};
-function hash(s){ let h=0; for(const c of s) h=(h*31 + c.charCodeAt(0))|0; return h; }
+// A lista de fontes saiu daqui: agora vive em fontes/, com uma interface
+// unica. Assim o dia do contrato com o Serpro e uma linha de configuracao,
+// nao uma reescrita deste arquivo.
+const fontes = require('./fontes');
 const { dataLocal } = require('./datas');
-function hoje(mais){ return dataLocal(mais); }   // dia civil do Brasil, não do servidor em UTC
+function hoje(mais){ return dataLocal(mais); }   // dia civil do Brasil, nao o do servidor em UTC
 
 /** Varre todas as placas cadastradas em todas as fontes ativas. */
 async function varrerPlacas() {
-  const fontesAtivas = (process.env.FONTES_MONITORAMENTO || 'demo').split(',').map(f=>f.trim()).filter(f=>FONTES[f]);
+  // Só as fontes que declaram fornecer 'multas' E estão configuradas.
+  const fontesAtivas = fontes.paraTipo('multas');
   const veiculos = db.prepare(`SELECT v.id, v.placa, v.usuario_id, u.nome, u.email
     FROM veiculos v JOIN usuarios u ON u.id = v.usuario_id`).all();
   let novas = 0;
   for (const v of veiculos) {
     for (const fonte of fontesAtivas) {
       let achadas = [];
-      try { achadas = await FONTES[fonte](v.placa); } catch (e) { continue; }
+      try {
+        const r = await fonte.consultar({ placa: v.placa });
+        achadas = r && r.ok && Array.isArray(r.dados) ? r.dados : [];
+      } catch (e) { continue; }
       for (const m of achadas) {
         // dedup: mesma AIT para o mesmo usuário nunca entra duas vezes
         const existe = db.prepare('SELECT 1 FROM multas WHERE ait=? AND usuario_id=?').get(m.ait, v.usuario_id);
@@ -64,7 +53,7 @@ async function varrerPlacas() {
           data_infracao,data_notificacao,prazo_defesa,origem,dados_json,detectada_por)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
           .run(v.usuario_id, v.id, m.ait, m.orgao, m.enquadramento, m.descricao, m.valor, m.pontos,
-            m.data_infracao, m.data_notificacao, m.prazo_defesa, m.origem, JSON.stringify(dados), fonte);
+            m.data_infracao, m.data_notificacao, m.prazo_defesa, m.origem, JSON.stringify(dados), fonte.nome);
         novas++;
         await emails.enviar('nova_multa',
           { id: v.usuario_id, nome: v.nome, email: v.email },
@@ -75,8 +64,17 @@ async function varrerPlacas() {
     }
   }
   db.prepare('INSERT INTO varreduras (fonte,placas_verificadas,novas_multas,detalhe) VALUES (?,?,?,?)')
-    .run(fontesAtivas.join(','), veiculos.length, novas, novas ? 'alertas disparados' : 'nada novo');
-  return { fontes: fontesAtivas, placas_verificadas: veiculos.length, novas_multas: novas };
+    .run(fontesAtivas.map(f => f.nome).join(',') || 'nenhuma',
+         veiculos.length, novas, novas ? 'alertas disparados' : 'nada novo');
+  return {
+    fontes: fontesAtivas.map(f => ({ nome: f.nome, oficial: f.oficial })),
+    placas_verificadas: veiculos.length,
+    novas_multas: novas,
+    // Sem fonte de multas ligada a varredura roda e nao acha nada — o que e o
+    // comportamento certo. O painel precisa saber distinguir "nada novo" de
+    // "nao consultei nada".
+    consultou: fontesAtivas.length > 0
+  };
 }
 
 module.exports = { varrerPlacas };

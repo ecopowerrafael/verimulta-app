@@ -215,6 +215,7 @@ async function handoffDesenvolvedor(arquivo) {
       ['`motor_auditoria.js`', 'As 14 verificações A1–A14 (CTB 280–282, CONTRAN 900/918/2022, INMETRO 158/2022) + jurimetria v2 com correlação e teto.', 'caso real: 30%'],
       ['`config.js`', 'Segredos obrigatórios em produção (aborta no boot sem eles) + comparação `timingSafeEqual`.', 'testado'],
       ['`seguranca.js`', 'Rate limit por IP (janela deslizante), CORS por allowlist e cabeçalhos de endurecimento.', 'testado'],
+            ['`fontes/`', 'Camada de fontes externas: o app fala com uma **interface**, não com um fornecedor. `fipe` (pública, ligada), `configuravel` (URL, cabeçalho e mapa de campos vindos do ambiente — o encaixe para o dia do contrato) e `demonstracao` (desligada, bloqueada em produção). Fonte fora do ar devolve `ok:false`, **nunca dado inventado**.', 'testado'],
       ['`datas.js`', 'Dia civil no fuso do motorista (`FUSO_HORARIO`, padrão America/Sao_Paulo). Prazo é dia de calendário: com UTC, das 21h em diante o alerta procurava o dia seguinte.', 'testado'],
       ['`pagamentos.js`', 'Mercado Pago: preapproval, webhook com HMAC + reconsulta de status, cancelamento em 1 toque.', 'ciclo validado'],
       ['`pdf.js`', 'Defesa Prévia e Extrato de Auditoria em PDF timbrado (pdfkit, sem dependência nativa).', 'testado'],

@@ -331,6 +331,18 @@ const conteudo = [
   '# SMTP_PASS=<senha de aplicativo>',
   '# EMAIL_FROM=Verimulta <contato@verimulta.com.br>',
   '# GOOGLE_VISION_KEY=<chave da Cloud Vision API>',
+  '',
+  '# --- Consulta a bases externas (quando o contrato sair) ---',
+  '# O app fala com uma interface, nao com um fornecedor: preencha abaixo com',
+  '# o que a documentacao do fornecedor autorizado disser, e a consulta liga',
+  '# sem mexer em codigo. Veja o estado em /v1/fontes.',
+  '# FONTE_HTTP_URL=https://api.fornecedor.br/veiculo/{placa}',
+  '# FONTE_HTTP_CABECALHOS={"Authorization":"Bearer SUA-CHAVE"}',
+  '# FONTE_HTTP_RAIZ=resultado.veiculo',
+  '# FONTE_HTTP_MAPA={"modelo":"marcaModelo","ano":"anoFab","cor":"cor"}',
+  '# FONTE_HTTP_FORNECE=veiculo,multas',
+  '# FONTE_HTTP_ROTULO=Nome do fornecedor',
+  '# FONTE_HTTP_OFICIAL=true',
   ''
 ].join('\\r\\n');
 
