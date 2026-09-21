@@ -126,5 +126,45 @@ ok(/require\('\.\/datas'\)/.test(fs.readFileSync('./monitor.js', 'utf8')), 'moni
 ok(/Intl\.DateTimeFormat/.test(fs.readFileSync('./publico/admin.html', 'utf8')),
    'admin.html converte o carimbo UTC do banco para a hora local');
 
+console.log('\n[11] Nada de dado inventado sobre o veiculo de ninguem');
+// A regra da casa e "nunca inventar multa". Estas telas mostravam valores
+// fixos no HTML — IPVA quitado, licenciamento pago, 1 multa de R$ 130,16 —
+// iguais para QUALQUER usuario e para QUALQUER placa digitada. Com gente de
+// verdade usando o app, isso afirma um fato sobre o veiculo do outro sem ter
+// consultado nada. Este bloco impede que volte.
+const fontesPublicas = {
+  'servidor.js': fs.readFileSync('./servidor.js', 'utf8'),
+  'publico/app.html': fs.readFileSync('./publico/app.html', 'utf8'),
+  'publico/index.html': fs.readFileSync('./publico/index.html', 'utf8')
+};
+const PROIBIDO = [
+  [/ipva:\s*'QUITADO'/i, "IPVA 'QUITADO' fabricado"],
+  [/divida_ativa:\s*'NADA INSCRITO'/i, "divida ativa 'NADA INSCRITO' fabricada"],
+  [/multas_encontradas:\s*[1-9]/, 'quantidade de multas fabricada'],
+  [/NADA INSCRITO<\/span>/, "selo 'NADA INSCRITO' na tela"],
+  [/Nenhum d[eé]bito em d[ií]vida ativa/i, "afirmacao 'nenhum debito' sem consulta"],
+  [/>Quitado</, "'Quitado' fixo no HTML"],
+  [/Licenciamento 2026<\/span><span class="r" style="color:var\(--ok\)">Pago/, "'Licenciamento Pago' fixo"]
+];
+for (const [arquivo, conteudo] of Object.entries(fontesPublicas)) {
+  for (const [rx, rotulo] of PROIBIDO) {
+    ok(!rx.test(conteudo), `${arquivo}: sem ${rotulo}`);
+  }
+}
+ok(/consulta_oficial:\s*false/.test(fontesPublicas['servidor.js']),
+   '/v1/consulta-placa declara que a consulta oficial ainda nao esta ligada');
+ok(/nao_conectado/.test(fontesPublicas['servidor.js']),
+   'o resumo do veiculo declara o que a plataforma NAO sabe');
+
+console.log('\n[12] Pontuacao da CNH pelo CTB (Lei 14.071/2020)');
+// Limite de pontos para suspensao: 20 com 2+ gravissimas, 30 com 1, 40 sem
+// nenhuma (CTB art. 261 par. 1o). A conta sai das multas do proprio usuario.
+const servidorTxt = fontesPublicas['servidor.js'];
+ok(/gravissimas >= 2 \? 20 : gravissimas === 1 \? 30 : 40/.test(servidorTxt),
+   'limites 20/30/40 conforme o numero de gravissimas');
+ok(/origem: 'multas cadastradas neste aplicativo'/.test(servidorTxt),
+   'a resposta declara de onde vem o numero (nao e consulta ao Detran)');
+ok(/dataLocal\(-365\)/.test(servidorTxt), 'janela de 12 meses');
+
 console.log(`\n=== ${falhas} falha(s) ===`);
 process.exit(falhas ? 1 : 0);

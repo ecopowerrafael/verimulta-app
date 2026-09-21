@@ -66,6 +66,10 @@ migrarColuna('usuarios', 'consentimento_versao', "TEXT");
 // Direito de eliminação (art. 18, VI): a conta é anonimizada, não apagada em
 // silêncio — os registros fiscais do pagamento precisam sobreviver.
 migrarColuna('usuarios', 'anonimizado_em', "TEXT");
+// Validade da CNH informada pelo próprio titular. Sem credenciamento oficial
+// não há de onde puxar — e inventar uma data de vencimento de habilitação
+// seria pior do que não mostrar nada.
+migrarColuna('usuarios', 'cnh_validade', "TEXT");
 
 /** Gera o texto da Defesa Prévia a partir do diagnóstico. */
 function gerarDefesa({ usuario, multa, teses }) {

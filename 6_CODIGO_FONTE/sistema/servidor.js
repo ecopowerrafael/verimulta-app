@@ -14,6 +14,7 @@ const { PLANOS, planoDe, precoDe, chaveDe } = require('./planos');
 const { JWT_SECRET, ADMIN_SECRET, conferirSegredo, PRODUCAO } = require('./config');
 const { limitar, cors, cabecalhos, ipDe } = require('./seguranca');
 const { defesaPDF, extratoPDF } = require('./pdf');
+const { dataLocal, hoje, diasAte } = require('./datas');
 const fs = require('fs');
 
 /** Versão do termo aceito no cadastro — muda quando o texto dos Termos mudar. */
@@ -350,17 +351,87 @@ app.get('/v1/consulta-placa/:placa', limitar('placa', 20, 300), (req, res) => {
   const placa = (req.params.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!/^[A-Z]{3}\d[A-Z0-9]\d{2}$/.test(placa))
     return res.status(400).json({ erro: 'Placa inválida. Formato: ABC1D23.' });
+  // Antes esta rota devolvia uma multa fabricada (1 multa, R$ 130,16) e
+  // "IPVA QUITADO" para QUALQUER placa, pública e sem login. Com usuários
+  // reais isso afirma um fato sobre o veículo de outra pessoa sem ter
+  // consultado nada — e contraria a regra da casa: nunca inventar multa.
+  // A rota continua existindo como porta de entrada, mas não afirma nada.
   res.json({
-    placa, modo: 'demonstracao',
-    aviso: 'Ambiente de demonstração — estrutura real, dados ilustrativos. As consultas oficiais entram com o credenciamento (SENATRAN/Detran).',
-    veiculo: { situacao: 'REGULAR', especie: 'PASSAGEIRO' },
-    resumo: {
-      multas_encontradas: 1,
-      valor_total: 130.16,
-      licenciamento: 'EM DIA', ipva: 'QUITADO', recall: 'NENHUM', divida_ativa: 'NADA INSCRITO'
-    },
-    multas_teaser: [{ descricao: 'Infração média — agente de trânsito', valor: 130.16, pontos: 4, verificavel: true }],
-    proximo_passo: 'Crie sua conta grátis para ver os detalhes e verificar se a multa tem vício: /app.html'
+    placa,
+    consulta_oficial: false,
+    situacao: 'nao_conectada',
+    aviso: 'Ainda não consultamos bases oficiais: o acesso a RENAVAM/RENAINF depende do credenciamento SENATRAN/Serpro, em andamento. Não afirmamos nada sobre este veículo sem ter consultado.',
+    o_que_ja_funciona: 'Envie a foto da notificação: o app lê o documento, roda as 14 verificações com base legal e monta a Defesa Prévia.',
+    proximo_passo: 'Crie sua conta grátis e verifique sua multa pelo documento: /app.html'
+  });
+});
+
+// ---------- CNH: pontuação real, calculada do que o usuário registrou ----------
+/**
+ * Pontos dos últimos 12 meses, somados das multas do próprio usuário.
+ * NÃO é consulta ao Detran: é a conta do que está cadastrado aqui, e a
+ * resposta diz isso em `origem`. O limite segue o CTB art. 261 §1º com a
+ * redação da Lei 14.071/2020 — 20 pontos com duas ou mais gravíssimas,
+ * 30 com uma, 40 sem nenhuma.
+ */
+app.get('/v1/cnh', autenticar, (req, res) => {
+  const desde = dataLocal(-365);
+  const multas = db.prepare(`SELECT id, ait, descricao, pontos, data_infracao
+    FROM multas WHERE usuario_id=? AND data_infracao IS NOT NULL AND data_infracao >= ?
+    ORDER BY data_infracao DESC`).all(req.usuario.id, desde);
+
+  const comPontos = multas.filter(m => Number.isFinite(m.pontos) && m.pontos > 0);
+  const semPontos = multas.length - comPontos.length;
+  const pontos = comPontos.reduce((s, m) => s + m.pontos, 0);
+  const gravissimas = comPontos.filter(m => m.pontos === 7).length;
+  const limite = gravissimas >= 2 ? 20 : gravissimas === 1 ? 30 : 40;
+
+  const u = db.prepare('SELECT cnh_validade FROM usuarios WHERE id=?').get(req.usuario.id);
+
+  res.json({
+    pontos, limite, gravissimas,
+    restam: Math.max(0, limite - pontos),
+    situacao: pontos >= limite ? 'limite atingido' : pontos >= limite * 0.75 ? 'atenção' : 'regular',
+    janela: { de: desde, ate: hoje() },
+    multas_consideradas: comPontos.length,
+    multas_sem_pontuacao: semPontos,
+    cnh_validade: u ? u.cnh_validade : null,
+    dias_para_vencer_cnh: u && u.cnh_validade ? diasAte(u.cnh_validade) : null,
+    origem: 'multas cadastradas neste aplicativo',
+    aviso: semPontos
+      ? `${semPontos} multa(s) sem pontuação identificada ainda não entram na conta — confirme o enquadramento para incluir.`
+      : 'A conta considera apenas as multas cadastradas aqui. A pontuação oficial é a do Detran.'
+  });
+});
+
+/** O titular informa a validade da própria CNH (não há fonte oficial ligada). */
+app.post('/v1/cnh', autenticar, (req, res) => {
+  const { validade } = req.body || {};
+  if (validade !== null && !/^\d{4}-\d{2}-\d{2}$/.test(String(validade || '')))
+    return res.status(400).json({ erro: 'validade: use o formato AAAA-MM-DD, ou null para limpar.' });
+  db.prepare('UPDATE usuarios SET cnh_validade=? WHERE id=?').run(validade || null, req.usuario.id);
+  res.json({ ok: true, cnh_validade: validade || null });
+});
+
+/** Resumo do veículo: só o que a plataforma realmente sabe. */
+app.get('/v1/veiculos/:id/resumo', autenticar, (req, res) => {
+  const v = db.prepare('SELECT * FROM veiculos WHERE id=? AND usuario_id=?').get(req.params.id, req.usuario.id);
+  if (!v) return res.status(404).json({ erro: 'Veículo não encontrado.' });
+  const m = db.prepare(`SELECT COUNT(*) c, COALESCE(SUM(valor),0) t FROM multas
+    WHERE usuario_id=? AND veiculo_id=?`).get(req.usuario.id, v.id);
+  const ultimas = db.prepare(`SELECT ait, descricao, valor, data_infracao FROM multas
+    WHERE usuario_id=? AND veiculo_id=? ORDER BY COALESCE(data_infracao,'') DESC LIMIT 5`)
+    .all(req.usuario.id, v.id);
+  res.json({
+    veiculo: { id: v.id, placa: v.placa, modelo: v.modelo, renavam: v.renavam },
+    multas: { quantidade: m.c, valor_total: Number(m.t.toFixed(2)), ultimas },
+    // Sem convênio com o Detran não há de onde tirar estes itens. Declarar
+    // "não conectado" é a única resposta honesta — o app não inventa.
+    nao_conectado: {
+      itens: ['licenciamento', 'IPVA', 'recall', 'dívida ativa'],
+      motivo: 'A consulta oficial depende do credenciamento SENATRAN/Detran, ainda em andamento.',
+      enquanto_isso: 'Envie a notificação pelo scan: a auditoria e a defesa funcionam por documento.'
+    }
   });
 });
 

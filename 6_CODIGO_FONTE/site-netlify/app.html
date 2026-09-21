@@ -257,10 +257,11 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
       <button class="btn mini" style="margin-top:13px" onclick="go('t-planos')">Assinar a partir de R$ 29,90/mês</button>
     </div>
     <div class="cartao">
-      <h3>Panorama do veículo</h3>
-      <div class="linha-item"><span class="l">Licenciamento 2026</span><span class="r" style="color:var(--ok)">Pago</span></div>
-      <div class="linha-item"><span class="l">IPVA 2026</span><span class="r" style="color:var(--ok)">Quitado</span></div>
-      <div class="linha-item"><span class="l">Recall pendente</span><span class="r">Nenhum</span></div>
+      <h3>Panorama do ve&iacute;culo</h3>
+      <div class="linha-item"><span class="l">Placa monitorada</span><span class="r mono" id="hoPlaca">&mdash;</span></div>
+      <div class="linha-item"><span class="l">Multas cadastradas</span><span class="r" id="hoMultas">0</span></div>
+      <div class="linha-item"><span class="l">Pontos na CNH (12 meses)</span><span class="r" id="hoPontos">&mdash;</span></div>
+      <div class="cz" style="margin-top:10px">Licenciamento, IPVA e recall entram com o credenciamento oficial. At&eacute; l&aacute; o app n&atilde;o exibe esses itens &mdash; <b>preferimos n&atilde;o mostrar a mostrar errado</b>.</div>
     </div>
   </div>
 </section>
@@ -354,55 +355,62 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
 
 <!-- VEÍCULO -->
 <section class="tela" id="t-veiculo">
-  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Meu veículo</h1><div class="sub" id="vePlaca">SVE3J45</div></div></div>
+  <div class="cab"><button class="volta" onclick="go('t-home')">&larr;</button><div><h1>Meu ve&iacute;culo</h1><div class="sub" id="vePlaca">&mdash;</div></div></div>
   <div class="miolo">
-    <div class="cartao"><h3>VW Nivus HL TSI · 2024</h3>
-      <div class="linha-item"><span class="l">Licenciamento</span><span class="r" style="color:var(--ok)">Em dia</span></div>
-      <div class="linha-item"><span class="l">IPVA 2026</span><span class="r" style="color:var(--ok)">Quitado</span></div>
-      <div class="linha-item"><span class="l">Multas ativas</span><span class="r" style="color:var(--vicio)">1 · R$ 130,16</span></div>
-      <div class="linha-item"><span class="l">Recall</span><span class="r">Nenhum pendente</span></div>
+    <div class="cartao">
+      <h3 id="veModelo">Ve&iacute;culo</h3>
+      <div class="linha-item"><span class="l">Placa</span><span class="r mono" id="vePlaca2">&mdash;</span></div>
+      <div class="linha-item"><span class="l">Multas cadastradas</span><span class="r" id="veMultas">0</span></div>
+      <div class="linha-item"><span class="l">Valor somado</span><span class="r" id="veTotal">R$ 0,00</span></div>
     </div>
-    <div class="cartao"><h3>Histórico recente</h3>
-      <div class="linha-item"><span class="l">10/07/2026</span><span class="r">Autuação 7366-2 (celular)</span></div>
-      <div class="linha-item"><span class="l">15/01/2026</span><span class="r">Licenciamento renovado</span></div>
+    <div class="cartao" id="veHistoricoCard" style="display:none">
+      <h3>Hist&oacute;rico neste aplicativo</h3>
+      <div id="veHistorico"></div>
     </div>
-    <button class="btn sec" onclick="go('t-scan')">Verificar a multa deste veículo</button>
+    <div class="cartao" style="border-left:4px solid var(--sinal)">
+      <h3>Ainda n&atilde;o conectado</h3>
+      <div class="cz" id="veNaoConectado">Licenciamento, IPVA, recall e d&iacute;vida ativa dependem do credenciamento oficial (SENATRAN/Detran), em andamento. <b>Enquanto isso o app n&atilde;o mostra esses dados</b> &mdash; preferimos n&atilde;o mostrar a mostrar errado.</div>
+    </div>
+    <button class="btn sec" onclick="go('t-scan')">Verificar uma multa deste ve&iacute;culo</button>
   </div>
 </section>
 
 <!-- CNH -->
 <section class="tela" id="t-cnh">
-  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Minha CNH</h1><div class="sub">Situação e pontuação</div></div></div>
+  <div class="cab"><button class="volta" onclick="go('t-home')">&larr;</button><div><h1>Minha CNH</h1><div class="sub">Pontos das multas cadastradas aqui</div></div></div>
   <div class="miolo">
     <div class="cartao" style="text-align:center">
-      <span class="pill ok">CNH REGULAR</span>
-      <div class="display" style="font-size:48px;font-weight:800;margin:12px 0 2px">4 <span style="font-size:15px;color:var(--cinza);font-family:'Inter';font-weight:600">/ 40 pts</span></div>
-      <div class="cz">Últimos 12 meses · limite sem suspensão: 40 pontos</div>
-      <div class="barra" style="margin-top:13px"><i style="width:10%"></i></div>
+      <span class="pill ok" id="cnhSituacao">&mdash;</span>
+      <div class="display" style="font-size:48px;font-weight:800;margin:12px 0 2px"><span id="cnhPontos">0</span> <span style="font-size:15px;color:var(--cinza);font-family:'Inter';font-weight:600">/ <span id="cnhLimite">40</span> pts</span></div>
+      <div class="cz" id="cnhJanela">&Uacute;ltimos 12 meses</div>
+      <div class="barra" style="margin-top:13px"><i id="cnhBarra" style="width:0%"></i></div>
+      <div class="cz" id="cnhDetalhe" style="margin-top:10px"></div>
     </div>
-    <div class="cartao"><h3>Alertas</h3>
-      <div class="linha-item"><span class="l">Vencimento da CNH</span><span class="r">14/03/2029</span></div>
-      <div class="linha-item"><span class="l">Indicação de condutor</span><span class="r" style="color:var(--vicio)">até 28/09/2026</span></div>
+    <div class="cartao">
+      <h3>De onde vem este n&uacute;mero</h3>
+      <div class="cz" id="cnhOrigem">Somamos os pontos das multas que voc&ecirc; cadastrou neste aplicativo, nos &uacute;ltimos 12 meses. <b>N&atilde;o &eacute; a consulta oficial do Detran</b> &mdash; ela entra quando o credenciamento sair.</div>
     </div>
-    <div class="cartao trava-caixa">
-      <div id="cnhBorrado" class="borrado"><h3>Alertas automáticos push + e-mail</h3><div class="cz">Aviso 15, 7, 3 e 1 dia antes de cada prazo. Nunca mais perca uma data.</div></div>
-      <div class="trava-cima" id="cnhTrava"><div class="cadeado">🔒</div><button class="btn mini" style="width:auto;padding:10px 20px" onclick="abrirPaywall('alertas')">Desbloquear alertas</button></div>
+    <div class="cartao">
+      <h3>Validade da sua CNH</h3>
+      <div class="cz">Informe a data que est&aacute; no seu documento e o app passa a avisar antes de vencer.</div>
+      <div style="display:flex;gap:9px;margin-top:11px">
+        <input type="date" id="cnhValidade" style="flex:1;padding:11px;border:1px solid var(--linha);border-radius:11px;font-family:inherit;font-size:14px">
+        <button class="btn mini" style="width:auto;padding:11px 18px" onclick="salvarValidadeCnh()">Salvar</button>
+      </div>
+      <div class="cz" id="cnhAvisoValidade" style="margin-top:9px"></div>
     </div>
   </div>
 </section>
 
 <!-- DÉBITOS -->
 <section class="tela" id="t-debitos">
-  <div class="cab"><button class="volta" onclick="go('t-home')">←</button><div><h1>Débitos correntes</h1><div class="sub">IPVA · Licenciamento · Multas</div></div></div>
+  <div class="cab"><button class="volta" onclick="go('t-home')">&larr;</button><div><h1>Meus d&eacute;bitos</h1><div class="sub">Multas cadastradas neste aplicativo</div></div></div>
   <div class="miolo">
-    <div class="cartao">
-      <h3>Multa — AIT T00226588</h3>
-      <div class="linha-item"><span class="l">Valor integral</span><span class="r">R$ 130,16</span></div>
-      <div class="linha-item"><span class="l">Com SNE (−40%)</span><span class="r" style="color:var(--ok)">R$ 78,10</span></div>
-      <div class="cz" style="margin-top:9px">💡 Antes de pagar, veja a probabilidade da defesa — pagar encerra a discussão.</div>
-      <button class="btn mini sec" style="margin-top:12px" onclick="go('t-scan')">Verificar antes de pagar</button>
+    <div id="debLista"></div>
+    <div class="cartao" style="border-left:4px solid var(--sinal)">
+      <h3>IPVA e licenciamento</h3>
+      <div class="cz">Estes valores v&ecirc;m do &oacute;rg&atilde;o de tr&acirc;nsito e dependem do credenciamento oficial, ainda em andamento. <b>O app n&atilde;o estima nem inventa</b> essas parcelas.</div>
     </div>
-    <div class="cartao"><h3>IPVA e licenciamento</h3><div class="cz">Sem parcelas em aberto para <span id="debPlaca">SVE3J45</span>. 🎉</div></div>
   </div>
 </section>
 
@@ -416,10 +424,11 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
       <div><label>CPF do proprietário</label><input id="da-cpf" placeholder="000.000.000-00" inputmode="numeric"></div>
       <button class="btn" onclick="consultarDivida()">Consultar</button>
     </div>
-    <div class="cartao" id="da-result" style="display:none">
-      <span class="pill ok">NADA INSCRITO</span>
-      <h3 style="margin-top:9px">Nenhum débito em dívida ativa</h3>
-      <div class="cz">Não localizamos IPVA, multas ou taxas inscritas para os dados informados.</div>
+    <div class="cartao" id="da-result" style="display:none;border-left:4px solid var(--sinal)">
+      <span class="pill alerta">CONSULTA N&Atilde;O CONECTADA</span>
+      <h3 style="margin-top:9px">Ainda n&atilde;o conseguimos consultar por voc&ecirc;</h3>
+      <div class="cz">A d&iacute;vida ativa &eacute; consultada na Fazenda ou na Procuradoria do seu estado, e o acesso depende de conv&ecirc;nio &mdash; em andamento. <b>N&atilde;o vamos dizer que est&aacute; tudo certo sem ter checado.</b><br><br>Por enquanto, consulte direto no portal do seu estado; os links est&atilde;o em <b>Consultas oficiais</b>, no menu.</div>
+      <button class="btn mini sec" style="margin-top:12px" onclick="go('t-consultas')">Abrir consultas oficiais</button>
     </div>
   </div>
 </section>
@@ -597,6 +606,79 @@ label{font-size:12px;font-weight:700;display:block;margin:4px 0 6px;color:#3A455
 </div>
 
 <script>
+/* ===== Telas que dependem de dado real =====
+   Estas telas mostravam valores fixos no HTML ("IPVA quitado", "4/40 pts",
+   "VW Nivus 2024") — iguais para qualquer pessoa. Agora vêm da API, e o que a
+   plataforma não tem como saber aparece como "não conectado" em vez de um
+   número inventado. */
+async function carregarCnh(){
+  const r = await api('/v1/cnh');
+  if(!r.ok) return;
+  const d = r.dados;
+  document.getElementById('cnhPontos').textContent = d.pontos;
+  document.getElementById('cnhLimite').textContent = d.limite;
+  document.getElementById('cnhJanela').textContent =
+    'Janela de 12 meses · ' + dataBR(d.janela.de) + ' a ' + dataBR(d.janela.ate);
+  const pct = Math.min(100, Math.round((d.pontos / d.limite) * 100));
+  document.getElementById('cnhBarra').style.width = pct + '%';
+  const sit = document.getElementById('cnhSituacao');
+  sit.textContent = d.situacao.toUpperCase();
+  sit.className = 'pill ' + (d.situacao === 'regular' ? 'ok' : 'alerta');
+  document.getElementById('cnhDetalhe').textContent =
+    d.multas_consideradas + ' multa(s) na conta · ' + d.gravissimas + ' gravíssima(s) · restam ' + d.restam + ' ponto(s)';
+  document.getElementById('cnhOrigem').textContent = d.aviso;
+  if(d.cnh_validade) document.getElementById('cnhValidade').value = d.cnh_validade;
+  const av = document.getElementById('cnhAvisoValidade');
+  if(d.dias_para_vencer_cnh === null) av.textContent = '';
+  else if(d.dias_para_vencer_cnh < 0) av.textContent = 'Sua CNH consta como VENCIDA há ' + Math.abs(d.dias_para_vencer_cnh) + ' dia(s).';
+  else av.textContent = 'Faltam ' + d.dias_para_vencer_cnh + ' dia(s) para vencer.';
+}
+async function salvarValidadeCnh(){
+  const v = document.getElementById('cnhValidade').value;
+  const r = await api('/v1/cnh', { method:'POST', json:{ validade: v || null } });
+  toast(r.ok ? 'Validade salva.' : 'Não foi possível salvar.');
+  if(r.ok) carregarCnh();
+}
+async function carregarVeiculo(){
+  if(!APP.veiculoId){ document.getElementById('veModelo').textContent = 'Nenhum veículo cadastrado'; return; }
+  const r = await api('/v1/veiculos/' + APP.veiculoId + '/resumo');
+  if(!r.ok) return;
+  const d = r.dados;
+  document.getElementById('vePlaca').textContent = d.veiculo.placa;
+  document.getElementById('vePlaca2').textContent = d.veiculo.placa;
+  document.getElementById('veModelo').textContent = d.veiculo.modelo || 'Veículo';
+  document.getElementById('veMultas').textContent = d.multas.quantidade;
+  document.getElementById('veTotal').textContent = 'R$ ' + d.multas.valor_total.toFixed(2).replace('.', ',');
+  document.getElementById('veNaoConectado').innerHTML =
+    esc(d.nao_conectado.itens.join(', ')) + ' dependem do credenciamento oficial. <b>' +
+    esc(d.nao_conectado.motivo) + '</b> ' + esc(d.nao_conectado.enquanto_isso);
+  const card = document.getElementById('veHistoricoCard');
+  const lista = document.getElementById('veHistorico');
+  const ult = d.multas.ultimas || [];
+  card.style.display = ult.length ? 'block' : 'none';
+  lista.innerHTML = ult.map(m =>
+    '<div class="linha-item"><span class="l">' + dataBR(m.data_infracao) + '</span><span class="r">' +
+    esc(m.descricao || m.ait || 'Autuação') + '</span></div>').join('');
+}
+function carregarDebitos(){
+  const lista = document.getElementById('debLista');
+  if(!APP.multas || !APP.multas.length){
+    lista.innerHTML = '<div class="cartao"><h3>Nenhuma multa cadastrada</h3><div class="cz">Assim que você registrar uma notificação, ela aparece aqui com o valor e o prazo.</div></div>';
+    return;
+  }
+  lista.innerHTML = APP.multas.map(m => {
+    const v = Number(m.valor || 0);
+    const comDesconto = v ? (v * 0.6).toFixed(2).replace('.', ',') : null;
+    return '<div class="cartao"><h3>' + esc(m.descricao || 'Autuação') + '</h3>' +
+      '<div class="linha-item"><span class="l">AIT</span><span class="r mono">' + esc(m.ait || '—') + '</span></div>' +
+      '<div class="linha-item"><span class="l">Valor integral</span><span class="r">R$ ' + v.toFixed(2).replace('.', ',') + '</span></div>' +
+      (comDesconto ? '<div class="linha-item"><span class="l">Com desconto do SNE (−40%)</span><span class="r" style="color:var(--ok)">R$ ' + comDesconto + '</span></div>' : '') +
+      (m.prazo_defesa ? '<div class="linha-item"><span class="l">Prazo da defesa</span><span class="r" style="color:var(--vicio)">' + dataBR(m.prazo_defesa) + ' · ' + rotuloPrazo(m.prazo_defesa) + '</span></div>' : '') +
+      '<div class="cz" style="margin-top:9px">Antes de pagar, veja a auditoria: pagar encerra a discussão.</div>' +
+      '<button class="btn mini sec" style="margin-top:12px" onclick="verDiagnostico(' + m.id + ')">Ver a auditoria</button></div>';
+  }).join('');
+}
+
 /* ===== Prazo em dias de calendário =====
    Prazo de defesa é DIA, não instante. `new Date('2026-06-17')` é meia-noite
    em UTC: no Brasil (UTC-3) a conta dava sempre um dia a menos, e a tela
@@ -642,6 +724,10 @@ function go(id){
   alvo.classList.add('ativa'); alvo.scrollTop = 0;
   document.getElementById('navbar').style.display = TELAS_SEM_NAV.includes(id) ? 'none' : 'flex';
   document.querySelectorAll('.navbar button').forEach(b=>b.classList.toggle('on', b.dataset.t===id));
+  // telas que buscam dado de verdade ao abrir
+  if(id === 't-cnh') carregarCnh();
+  if(id === 't-veiculo') carregarVeiculo();
+  if(id === 't-debitos') carregarDebitos();
 }
 function toast(msg){
   const t = document.getElementById('toast');
@@ -702,13 +788,18 @@ async function carregarDados(){
   const [v, m] = await Promise.all([ api('/v1/veiculos'), api('/v1/multas') ]);
   APP.veiculos = v.ok ? v.dados : [];
   APP.multas = m.ok ? m.dados : [];
-  if(APP.veiculos[0]) APP.placa = APP.veiculos[0].placa;
+  if(APP.veiculos[0]){ APP.placa = APP.veiculos[0].placa; APP.veiculoId = APP.veiculos[0].id; }
   renderHome();
 }
 function renderHome(){
   document.getElementById('hMultas').textContent = APP.multas.length || '0';
   const comPrazo = APP.multas.filter(x=>x.prazo_defesa).sort((a,b)=>a.prazo_defesa.localeCompare(b.prazo_defesa))[0];
   document.getElementById('hPrazo').textContent = comPrazo ? rotuloPrazo(comPrazo.prazo_defesa) : '—';
+  document.getElementById('hoPlaca').textContent = APP.placa || 'nenhuma';
+  document.getElementById('hoMultas').textContent = APP.multas.length;
+  api('/v1/cnh').then(r => {
+    if(r.ok) document.getElementById('hoPontos').textContent = r.dados.pontos + ' / ' + r.dados.limite;
+  }).catch(()=>{});
   const c = document.getElementById('cardMulta');
   if(APP.multas.length){
     const m = APP.multas[0];
@@ -950,7 +1041,7 @@ function consultarDivida(){
   if(!p){ toast('Informe ao menos a placa.'); return; }
   if(APP.placa && p !== APP.placa && !APP.assinante){ abrirPaywall('placa3'); return; }
   document.getElementById('da-result').style.display = 'block';
-  toast('Consulta às bases oficiais entra com o credenciamento (roadmap).');
+  toast('A consulta oficial ainda não está ligada — veja a explicação na tela.');
 }
 function precoParceiro(){
   const [m, pix] = document.getElementById('pc-cat').value.split('|');

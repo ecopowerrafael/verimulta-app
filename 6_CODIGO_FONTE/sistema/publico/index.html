@@ -243,8 +243,8 @@ footer .disclaimer{max-width:840px;line-height:1.7;border-top:1px solid #2A323B;
 
     <div class="doc" aria-label="Demonstração de auditoria de notificação">
       <div class="doc-cab">
-        <span class="t">NOTIFICAÇÃO DE AUTUAÇÃO</span>
-        <span class="pill">AUDITANDO…</span>
+        <span class="t">NOTIFICAÇÃO DE AUTUAÇÃO (exemplo)</span>
+        <span class="pill">EXEMPLO · AUDITANDO…</span>
       </div>
       <div class="doc-body">
         <div class="doc-campos">
@@ -301,17 +301,24 @@ footer .disclaimer{max-width:840px;line-height:1.7;border-top:1px solid #2A323B;
 async function consultarPlaca(){
   const p = document.getElementById('cp-placa').value.trim().toUpperCase();
   if(!/^[A-Z]{3}\d[A-Z0-9]\d{2}$/.test(p)){ alert('Digite a placa no formato ABC1D23.'); return; }
+  /* Esta tela mostrava multa, IPVA e licenciamento inventados para QUALQUER
+     placa digitada. Afirmar que o carro de alguem tem uma multa de R$ 130,16
+     sem ter consultado nada e o oposto do que o produto promete. Enquanto o
+     credenciamento oficial nao sai, a resposta honesta e dizer que ainda nao
+     consultamos — e oferecer o que de fato funciona: a auditoria por documento. */
   let d = null;
   try{ const r = await fetch('/v1/consulta-placa/'+p); if(r.ok) d = await r.json(); }catch(e){}
-  if(!d) d = { placa:p, resumo:{ multas_encontradas:1, valor_total:130.16, licenciamento:'EM DIA', ipva:'QUITADO', recall:'NENHUM', divida_ativa:'NADA INSCRITO' } };
-  document.getElementById('cp-r-placa').textContent = d.placa;
-  const R = d.resumo;
-  document.getElementById('cp-r-linhas').innerHTML =
-    '🚨 Multas encontradas: <b>'+R.multas_encontradas+'</b> (R$ '+R.valor_total.toFixed(2).replace('.',',')+') — <b style="color:#0B3C7E">dá para verificar antes de pagar</b><br>'+
-    '📋 Licenciamento: <b style="color:#0E8A5F">'+R.licenciamento+'</b> &nbsp;·&nbsp; 💰 IPVA: <b style="color:#0E8A5F">'+R.ipva+'</b><br>'+
-    '🔧 Recall: <b>'+R.recall+'</b> &nbsp;·&nbsp; 🏛️ Dívida ativa: <b>'+R.divida_ativa+'</b>';
+  document.getElementById('cp-r-placa').textContent = (d && d.placa) || p;
+  document.getElementById('cp-r-linhas').innerHTML = d && d.consulta_oficial
+    ? '' /* reservado para quando a consulta oficial entrar */
+    : '<b>Ainda nao consultamos bases oficiais para esta placa.</b><br><br>'
+      + 'O acesso a RENAVAM/RENAINF depende do credenciamento junto ao SENATRAN/Serpro, que esta em andamento. '
+      + 'Nao vamos afirmar nada sobre o seu veiculo sem ter consultado.<br><br>'
+      + '<b style="color:#0B3C7E">O que ja funciona hoje:</b> envie a foto da sua notificacao no aplicativo. '
+      + 'Ele le o documento, roda as 14 verificacoes com base legal citada e monta a sua Defesa Previa em PDF.';
   document.getElementById('cp-resultado').style.display = 'block';
 }
+
 </script>
 <section id="como">
   <div class="wrap">

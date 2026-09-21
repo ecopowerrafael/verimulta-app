@@ -232,15 +232,18 @@ async function handoffDesenvolvedor(arquivo) {
   d.folha({ eyebrow: 'parte 2 · referência da api v1', titulo: 'Endpoints principais' });
   d.tabela({
     colunas: ['Rota', 'Função'],
-    larguras: [1.25, 2.4],
-    tamanho: 8.8,
+    larguras: [1.2, 2.5],
+    tamanho: 7.9,
+    respiro: 8,
     linhas: [
       ['`POST /v1/auth/register` · `/login`', 'Cadastro (**exige** `consentimento: true` e grava data, IP e versão do termo) e login » JWT. Rate limit por IP.'],
       ['`GET/POST /v1/veiculos`', 'Listar e adicionar placas (limites por plano).'],
-      ['`POST /v1/multas/scan`', 'multipart foto » OCR » extração » grava a multa. Confere se o `veiculo_id` é do próprio usuário.'],
+      ['`POST /v1/multas/scan`', 'multipart foto » OCR » extração » grava a multa. Confere se o `veiculo_id` é do usuário.'],
       ['`GET /v1/multas/:id/diagnostico`', 'Motor: 14 verificações + **Índice de Consistência** + probabilidade (com gating por plano).'],
       ['`POST /v1/recursos`', 'Gera a Defesa Prévia (402 sem assinatura — paywall no servidor).'],
       ['`GET /v1/recursos/:id/pdf`', '**Defesa Prévia em PDF timbrado**, gerada no servidor.'],
+      ['`GET/POST /v1/cnh`', 'Pontos de 12 meses somados das multas do próprio usuário, com o limite do CTB art. 261 (20/30/40 conforme as gravíssimas). **Não é consulta ao Detran** — a resposta declara a origem. O POST grava a validade informada pelo titular.'],
+      ['`GET /v1/veiculos/:id/resumo`', 'O que a plataforma sabe do veículo e, explicitamente, o que **não** sabe: licenciamento, IPVA, recall e dívida ativa seguem `nao_conectado` até o credenciamento.'],
       ['`GET /v1/multas/:id/extrato.pdf`', '**Extrato de Auditoria em PDF**: as 14 verificações com a base legal de cada uma.'],
       ['`POST /v1/checkout`', 'Demo ativa direto · Produção (`GATEWAY=mercadopago`) cria o preapproval e devolve o checkout.'],
       ['`POST /v1/webhooks/mercadopago`', '**O endereço a cadastrar no MP.** Valida HMAC » reconsulta o MP » libera/derruba o plano » e-mail » trilha. `/v1/webhooks/pagamento` responde igual (histórico).'],
