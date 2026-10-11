@@ -19,7 +19,6 @@
 <link rel="apple-touch-icon" href="icones/icone-192.png">
 <link rel="manifest" href="manifest.json">
 
-<meta name="description" content="Fotografe a notificação e veja em 60 segundos a auditoria técnica da sua multa: 14 verificações, probabilidade estimada e defesa pronta para você protocolar em seu nome.">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -111,6 +110,8 @@ nav.menu a:hover{color:var(--ink)}
 @keyframes enche{to{width:78%}}
 .prob small{display:block;margin-top:8px;font-size:11px;color:var(--cinza)}
 @media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  .btn,.toast{transition:none}
   .chk,.prob{animation:none;opacity:1;transform:none}
   .barra i{animation:none;width:78%}
 }
@@ -551,7 +552,8 @@ footer .disclaimer{max-width:840px;line-height:1.7;border-top:1px solid #2A323B;
         <option>Gestor de frota (10+ veículos)</option>
         <option>Advogado / Despachante / Parceiro</option>
       </select>
-      <button class="btn btn-p" type="submit">Garantir meu lugar</button>
+      <button class="btn btn-p" type="submit">Entrar na lista de espera</button>
+      <p style="font-size:12px;color:var(--cinza);margin-top:10px">Lista de espera em preparação: este formulário ainda não envia dados para um serviço de cadastro.</p>
     </form>
   </div>
 </section>

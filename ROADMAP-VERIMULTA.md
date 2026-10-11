@@ -134,7 +134,7 @@ Princípios de evolução:
 
 ## Etapa 04 — Conclusão do frontend React
 
-**Status:** em andamento; VM-04.01, VM-04.02, VM-04.03, VM-04.03.1 e VM-04.04 implementadas e testadas localmente. Integração real pendente.
+**Status:** em andamento; VM-04.01, VM-04.02, VM-04.03, VM-04.03.1, VM-04.04, VM-04.05 e VM-04.06 implementadas e testadas localmente. Integração real e equivalência visual pendentes.
 
 ### Checklist
 
@@ -229,7 +229,7 @@ Princípios de evolução:
 - Quatro telas acessíveis sem alterar HTML legado ou backend.
 - Funcionalidades demonstrativas identificadas de forma explícita.
 - Nenhum dado pessoal coletado sem destino funcional.
-- VM-04.06 não iniciada.
+- VM-04.07 não iniciada.
 
 ### VM-04.03 — Feedback, transparência e navegação
 
@@ -261,7 +261,7 @@ Princípios de evolução:
 - Feedback não duplica envio enquanto a requisição está em andamento e não renderiza HTML não confiável.
 - Respostas de feedback de sessão antiga não alteram a sessão atual.
 - Transparência não cria promessas jurídicas ou resultados inexistentes.
-- VM-04.06 não iniciada.
+- VM-04.07 não iniciada.
 
 ### VM-04.03.1 — Correção de feedback e navegação
 
@@ -288,7 +288,7 @@ Princípios de evolução:
 
 - Confirmar essas jornadas contra Express real, sessão real e navegador real na VPS.
 - Validar recarregamento, botão voltar, foco e acessibilidade em todos os viewports.
-- VM-04.06 não iniciada.
+- VM-04.07 não iniciada.
 
 ### VM-04.04 — Painel administrativo React
 
@@ -348,6 +348,28 @@ Princípios de evolução:
 - `/index.html` entrega texto e metadados sem depender da execução de JavaScript para indexação.
 - `/app.html`, `/admin.html`, `/termos.html`, `/privacidade.html` e `/instalar.html` são entradas/recursos distintos no build.
 - Nenhuma confirmação de lista de espera ou consulta oficial é exibida sem contrato real.
+
+### VM-04.06 — Auditoria geral de equivalência e correções
+
+**Status:** implementada e testada localmente; equivalência visual, PWA, SEO em produção e integrações reais pendentes.
+
+#### Correções confirmadas
+
+- [x] Criar `AUDITORIA-EQUIVALENCIA-REACT.md` com matriz de telas, contratos, estados, evidências, criticidade e pendências.
+- [x] Auditar a jornada completa do usuário, o painel administrativo, a landing, documentos legais, PWA e contratos Express.
+- [x] Remover a duplicidade de `meta description`.
+- [x] Impedir que o service worker armazene API, checkout, admin ou requisições com credenciais; versionar o cache público.
+- [x] Corrigir labels sem associação e o botão de biometria sem implementação real.
+- [x] Preservar links legais no cadastro e o plano Frota como proposta sem checkout inexistente.
+- [x] Separar confirmação da tarefa administrativa do refresh e invalidar respostas de gerações administrativas antigas.
+- [x] Adicionar testes de tarefas, respostas atrasadas, PWA/entradas HTML, metadados e estados não conectados.
+- [ ] Executar comparação visual reproduzível nos seis tamanhos e homologar navegação/PWA em navegador real.
+
+#### Critérios de encerramento
+
+- A Etapa 04 permanece aberta enquanto houver pendências de VPS ou equivalência visual.
+- Nenhuma integração oficial, comercial, financeira ou administrativa é considerada pronta apenas por passar no build.
+- VM-04.07 não iniciada.
 
 ---
 
@@ -589,7 +611,7 @@ Princípios de evolução:
 
 ## Próxima sequência recomendada
 
-Não iniciar a VM-04.06 automaticamente. Após a homologação das VMs 04.01, 04.02, 04.03, 04.03.1, 04.04 e 04.05 na VPS, a próxima sequência recomendada da Etapa 04 é:
+Não iniciar a VM-04.07 automaticamente. Após a homologação das VMs 04.01, 04.02, 04.03, 04.03.1, 04.04, 04.05 e 04.06 na VPS, a próxima sequência recomendada da Etapa 04 é:
 
 1. concluir estados de erro, carregamento, vazio e paywall da jornada já migrada;
 2. migrar a tela de recursos/perfil com comparação visual formal e acessibilidade;

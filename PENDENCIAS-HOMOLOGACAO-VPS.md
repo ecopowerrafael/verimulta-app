@@ -97,7 +97,7 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Health check e observabilidade.
 - [ ] Plano de rollback para o HTML legado.
 
-**Última atualização:** 11/10/2026 — VM-04.05 preparou a landing pública multi-page, documentos e ativos, além das correções de isolamento/refresh da VM-04.04; 49 testes locais passaram, typecheck e build passaram. Backend integrado, SEO em produção, segurança operacional e comparação visual permanecem pendentes na VPS. Nenhuma funcionalidade integrada foi declarada aprovada.
+**Última atualização:** 11/10/2026 — VM-04.06 concluiu a auditoria geral, corrigiu cache PWA, SEO duplicado, acessibilidade e catálogo Frota, além das correções de isolamento/refresh da VM-04.04; 52 testes locais passaram, typecheck e build passaram. Backend integrado, SEO em produção, segurança operacional e comparação visual permanecem pendentes na VPS. Nenhuma funcionalidade integrada foi declarada aprovada.
 
 ## VM-03 — repetir na VPS após as correções React
 
@@ -177,7 +177,7 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Avaliar substituição futura da chave compartilhada por identidade individual, RBAC, auditoria e proteção contra replay antes de uso produtivo.
 - [ ] Definir idempotency key/controle transacional no backend para retries de tarefas administrativas; o bloqueio atual é apenas no frontend.
 
-**Atualização VM-04.04:** painel administrativo React implementado localmente; typecheck passou, 49 testes passaram no conjunto atual e build multi-page gerou `index.html`, `app.html` e `admin.html`. Todos os cenários acima permanecem pendentes de homologação na VPS.
+**Atualização VM-04.04:** painel administrativo React implementado localmente; typecheck passou, 52 testes passaram no conjunto atual e build multi-page gerou `index.html`, `app.html` e `admin.html`. Todos os cenários acima permanecem pendentes de homologação na VPS.
 
 ## VM-04.05 — repetir na VPS após a migração da landing
 
@@ -190,4 +190,18 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Verificar canonical/OG no domínio real, indexação e ausência de sitemap inexistente anunciado como disponível.
 - [ ] Confirmar compatibilidade da saída multi-page com o deploy atual do Netlify sem publicar ou substituir o site nesta etapa.
 
-**Atualização VM-04.05:** landing pública, entrada autenticada compatível, documentos legais e ativos foram preparados localmente; 49 testes passaram, typecheck e build multi-page passaram. SEO em produção, comparação visual e integração real permanecem pendentes na VPS.
+**Atualização VM-04.05:** landing pública, entrada autenticada compatível, documentos legais e ativos foram preparados localmente; 52 testes passaram, typecheck e build multi-page passaram. SEO em produção, comparação visual e integração real permanecem pendentes na VPS.
+
+## VM-04.06 — repetir na VPS após a auditoria geral
+
+- [ ] Comparar todas as telas do app, landing e admin com o HTML original em 320/360/390/430/768/1366 px, registrando evidência visual e divergências.
+- [ ] Confirmar cadastro, consentimento, login, troca/expiração de sessão, veículo, OCR, confirmação, diagnóstico, defesa/PDF, CNH, débitos, consultas, dívida ativa, frota, rede, parceiro, planos, checkout, perfil, LGPD, feedback, transparência, logout e histórico.
+- [ ] Confirmar que o service worker instalado abre `/app.html`, não cacheia `/v1`, checkout, admin ou respostas autenticadas e atualiza do cache anterior `verimulta-v1` para `verimulta-public-v2`.
+- [ ] Validar a landing com uma ferramenta de inspeção de metadados/crawler: uma única description, canonical, Open Graph, headings, links internos, robots e ausência de sitemap anunciado sem arquivo.
+- [ ] Repetir consulta pública com placa válida, inválida, excesso de chamadas, indisponibilidade e resposta `consulta_oficial: false`; confirmar ausência de dados oficiais inventados.
+- [ ] Confirmar que a lista de espera não envia nem afirma receber dados até existir endpoint operacional.
+- [ ] Confirmar tarefa administrativa executada com refresh falho, logout durante resposta, troca de chave, 401/403, duplo clique e resultado operacional já confirmado; não repetir tarefa por erro de refresh.
+- [ ] Validar foco, labels, teclado, contraste, `prefers-reduced-motion`, controles desabilitados e mensagens acessíveis.
+- [ ] Registrar como bloqueantes para produção a falta de autenticação administrativa individual/RBAC/auditoria, integrações oficiais, endpoint de lista de espera, checkout/webhook real e comparação visual não executada.
+
+**Atualização VM-04.06:** auditoria e correções locais concluídas; 52 testes passaram, typecheck e build multi-page passaram. A Etapa 04 não está homologada nem pronta para produção sem os cenários acima.

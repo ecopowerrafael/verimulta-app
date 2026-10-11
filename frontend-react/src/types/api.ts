@@ -139,7 +139,7 @@ export interface DefesaCriada {
 
 export interface PlanoDetalhe {
   nome: string;
-  preco: number;
+  preco?: number;
   preco_veiculo?: number;
   veiculos?: number;
   cnhs?: number;
