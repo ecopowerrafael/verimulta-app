@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#071E42">
+<title>Instalar o Verimulta no celular</title>
+<link rel="icon" type="image/png" href="icones/favicon.png">
+<link rel="apple-touch-icon" href="icones/icone-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="description" content="Instale o Verimulta no seu celular em 20 segundos, direto pelo navegador. Android e iPhone.">
+<style>
+:root{--ink:#12171D;--papel:#F7F8F5;--placa:#0B3C7E;--noite:#071E42;--sinal:#FFC933;--cinza:#5B6570;--linha:#E3E6E0;--ok:#0E8A5F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--papel);color:var(--ink);line-height:1.6;
+     padding:0 0 calc(40px + env(safe-area-inset-bottom))}
+.topo{background:linear-gradient(150deg,var(--noite),var(--placa));color:#fff;padding:calc(34px + env(safe-area-inset-top)) 22px 30px;text-align:center}
+.marca{display:inline-flex;align-items:center;gap:9px;font-weight:800;font-size:19px;letter-spacing:.01em}
+.marca .q{width:30px;height:30px;border-radius:9px;background:var(--sinal);display:inline-flex;align-items:center;justify-content:center;color:var(--noite);font-weight:900}
+h1{font-size:25px;font-weight:800;letter-spacing:-.015em;margin:16px 0 8px;line-height:1.25}
+.topo p{color:#B9C9E0;font-size:14.5px}
+.q{max-width:560px;margin:0 auto;padding:0 18px}
+.cartao{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:20px;margin-top:16px}
+.cartao h2{font-size:16.5px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:9px}
+.cartao h2 .n{flex:none;width:25px;height:25px;border-radius:8px;background:var(--placa);color:#fff;font-size:13px;
+              display:inline-flex;align-items:center;justify-content:center}
+.passo{display:flex;gap:11px;padding:9px 0;border-bottom:1px dashed var(--linha);font-size:14.5px}
+.passo:last-child{border:none}
+.passo b{color:var(--placa)}
+.abas{display:flex;gap:8px;margin-top:20px}
+.abas button{flex:1;padding:12px;border:1px solid var(--linha);background:#fff;border-radius:12px;font-family:inherit;
+             font-size:14.5px;font-weight:700;color:var(--cinza);cursor:pointer}
+.abas button.on{background:var(--placa);border-color:var(--placa);color:#fff}
+.qr{text-align:center;padding:6px 0}
+.qr img{width:min(260px,72vw);height:auto;border:1px solid var(--linha);border-radius:14px;background:#fff;padding:8px}
+.endereco{font-family:ui-monospace,'Cascadia Mono',Consolas,monospace;font-size:13.5px;background:var(--papel);
+          border:1px solid var(--linha);border-radius:10px;padding:11px;margin-top:11px;word-break:break-all;text-align:center}
+.btn{display:block;width:100%;text-align:center;background:var(--sinal);color:var(--ink);font-weight:800;
+     padding:15px;border-radius:13px;text-decoration:none;margin-top:16px;font-size:15.5px;border:none;font-family:inherit;cursor:pointer}
+.btn.sec{background:#fff;border:1px solid var(--linha);color:var(--ink)}
+.aviso{background:#FFF7E0;border:1px solid var(--sinal);border-radius:13px;padding:15px;margin-top:16px;font-size:13.5px}
+.rodape{text-align:center;color:var(--cinza);font-size:11.5px;margin-top:26px;padding:0 18px;line-height:1.55}
+.oculto{display:none}
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <div class="marca"><span class="q">&#10003;</span> VERIMULTA</div>
+  <h1>Instale no seu celular<br>em 20 segundos</h1>
+  <p>Não precisa de loja de aplicativos. O Verimulta instala direto pelo navegador e fica com ícone na sua tela, como qualquer app.</p>
+</div>
+
+<div class="q">
+
+  <div class="cartao">
+    <h2><span class="n">1</span> Abra este endereço no celular</h2>
+    <div class="qr">
+      <img id="qr" alt="QR Code para abrir o Verimulta no celular" src="v1/qr.svg">
+      <div class="endereco" id="endereco">carregando…</div>
+    </div>
+    <button class="btn sec" onclick="copiarEndereco()">Copiar o endereço</button>
+  </div>
+
+  <div class="abas">
+    <button id="abaAndroid" class="on" onclick="mostrar('android')">Android</button>
+    <button id="abaIphone" onclick="mostrar('iphone')">iPhone</button>
+  </div>
+
+  <div class="cartao" id="android">
+    <h2><span class="n">2</span> No Android (Chrome)</h2>
+    <div class="passo"><b>1.</b> Abra o endereço acima no <b>Chrome</b>.</div>
+    <div class="passo"><b>2.</b> Toque nos <b>três pontinhos</b> no canto superior direito.</div>
+    <div class="passo"><b>3.</b> Toque em <b>Instalar aplicativo</b> ou <b>Adicionar à tela inicial</b>.</div>
+    <div class="passo"><b>4.</b> Confirme. O ícone do Verimulta aparece na sua tela.</div>
+    <div class="passo">Pronto: abre em tela cheia, sem barra de navegador.</div>
+  </div>
+
+  <div class="cartao oculto" id="iphone">
+    <h2><span class="n">2</span> No iPhone (Safari)</h2>
+    <div class="passo"><b>1.</b> Abra o endereço acima no <b>Safari</b> — no iPhone só funciona pelo Safari.</div>
+    <div class="passo"><b>2.</b> Toque no botão <b>Compartilhar</b> (o quadrado com a seta para cima, embaixo).</div>
+    <div class="passo"><b>3.</b> Role e toque em <b>Adicionar à Tela de Início</b>.</div>
+    <div class="passo"><b>4.</b> Toque em <b>Adicionar</b>. O ícone aparece na sua tela.</div>
+    <div class="passo">Pronto: abre em tela cheia, sem barra de navegador.</div>
+  </div>
+
+  <a class="btn" href="app.html">Abrir o Verimulta agora</a>
+
+  <div class="aviso">
+    <b>Este é um teste fechado.</b> O aplicativo está em fase de avaliação e a
+    equipe acompanha o uso para corrigir o que aparecer. Nenhuma cobrança é
+    feita durante o teste. Suas multas são auditadas a partir do documento que
+    você enviar — consultas às bases oficiais do Detran ainda não estão ligadas,
+    e o app avisa isso em cada tela onde faria diferença.
+  </div>
+
+  <div class="rodape">
+    O Verimulta é uma plataforma de autoatendimento. As probabilidades
+    apresentadas são estimativas calculadas a partir das verificações — nunca
+    garantia de resultado. A decisão sobre a autuação é exclusiva do órgão
+    julgador.<br><br>
+    PRIMECORP BROKERS — CONSULTORIA E INTERMEDIAÇÃO DE NEGÓCIOS LTDA<br>
+    CNPJ 55.745.297/0001-06 ·
+    <a href="termos.html" style="color:var(--placa)">Termos</a> ·
+    <a href="privacidade.html" style="color:var(--placa)">Privacidade</a>
+  </div>
+</div>
+
+<script>
+function mostrar(qual){
+  document.getElementById('android').classList.toggle('oculto', qual !== 'android');
+  document.getElementById('iphone').classList.toggle('oculto', qual !== 'iphone');
+  document.getElementById('abaAndroid').classList.toggle('on', qual === 'android');
+  document.getElementById('abaIphone').classList.toggle('on', qual === 'iphone');
+}
+/* Abre já na aba do aparelho de quem está lendo. */
+if(/iPhone|iPad|iPod/i.test(navigator.userAgent)) mostrar('iphone');
+
+let ENDERECO = location.origin + '/instalar.html';
+fetch('v1/endereco').then(r => r.json()).then(d => {
+  ENDERECO = d.instalar;
+  document.getElementById('endereco').textContent = d.instalar;
+}).catch(() => { document.getElementById('endereco').textContent = ENDERECO; });
+
+function copiarEndereco(){
+  navigator.clipboard.writeText(ENDERECO)
+    .then(() => alert('Endereço copiado. Cole no WhatsApp para compartilhar.'))
+    .catch(() => prompt('Copie o endereço:', ENDERECO));
+}
+</script>
+</body>
+</html>

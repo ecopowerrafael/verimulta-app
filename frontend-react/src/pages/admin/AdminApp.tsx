@@ -1,5 +1,6 @@
-import { FormEvent, useCallback, useState } from 'react';
+import { FormEvent, useCallback, useRef, useState } from 'react';
 import { AdminApi, AdminAuthError } from '../../services/adminApi';
+import { executeAdminTask, isCurrentAdminGeneration } from '../../services/adminTaskFlow';
 import { isTaskAvailable, type AdminTask } from '../../services/adminTaskState';
 import type { AdminFeedbackSummary, AdminSummary } from '../../types/admin';
 
@@ -44,57 +45,82 @@ export function AdminApp() {
   const [runningTask, setRunningTask] = useState<AdminTask | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const generation = useRef(0);
+  const apiRef = useRef<AdminApi | null>(null);
 
-  const loadDashboard = useCallback(async (client: AdminApi) => {
+  const isCurrent = useCallback((client: AdminApi, startedAt: number) => {
+    return apiRef.current === client && isCurrentAdminGeneration(startedAt, generation.current);
+  }, []);
+
+  const clearSession = useCallback((client: AdminApi) => {
+    if (apiRef.current !== client) return;
+    client.clear();
+    apiRef.current = null;
+    generation.current += 1;
+    setApi(null);
+    setSummary(null);
+    setFeedback(null);
+    setRunningTask(null);
+    setLoading(false);
+  }, []);
+
+  const loadDashboard = useCallback(async (client: AdminApi, startedAt: number) => {
+    if (!isCurrent(client, startedAt)) return;
     setLoading(true);
     setError(null);
     try {
       const [nextSummary, nextFeedback] = await Promise.all([client.summary(), client.feedbacks()]);
+      if (!isCurrent(client, startedAt)) return;
       setSummary(nextSummary);
       setFeedback(nextFeedback);
     } catch (cause) {
-      if (cause instanceof AdminAuthError) {
-        client.clear();
-        setApi(null);
-        setSummary(null);
-        setFeedback(null);
-      }
       throw cause;
     } finally {
-      setLoading(false);
+      if (isCurrent(client, startedAt)) setLoading(false);
     }
-  }, []);
+  }, [isCurrent]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const candidate = secretDraft.trim();
     if (!candidate || loading) return;
     const client = new AdminApi(candidate);
+    const startedAt = generation.current + 1;
+    generation.current = startedAt;
+    apiRef.current = client;
     setLoading(true);
     setError(null);
     setMessage(null);
     try {
-      await loadDashboard(client);
+      await loadDashboard(client, startedAt);
+      if (!isCurrent(client, startedAt)) return;
       setApi(client);
       setSecretDraft('');
       setMessage('Painel carregado com dados retornados pelo servidor.');
     } catch (cause) {
+      if (!isCurrent(client, startedAt)) return;
+      if (cause instanceof AdminAuthError) clearSession(client);
       setError(cause instanceof AdminAuthError ? cause.message : 'Não foi possível autenticar o painel.');
     }
   }
 
   function handleLogout() {
-    api?.clear();
+    generation.current += 1;
+    apiRef.current?.clear();
+    apiRef.current = null;
     setApi(null);
     setSummary(null);
     setFeedback(null);
     setSecretDraft('');
     setMessage('Acesso administrativo encerrado.');
     setError(null);
+    setLoading(false);
   }
 
   async function runTask(task: AdminTask) {
-    if (!api || runningTask || !isTaskAvailable(runningTask, task)) return;
+    const client = api;
+    const startedAt = generation.current;
+    if (!client || runningTask || !isTaskAvailable(runningTask, task)) return;
     const confirmed = window.confirm(
       task === 'prazos'
         ? 'Executar agora a verificação de prazos e o envio de alertas?'
@@ -106,17 +132,27 @@ export function AdminApp() {
     setError(null);
     setMessage(null);
     try {
-      const result = task === 'prazos' ? await api.runDeadlines() : await api.runPlateScan();
-      await loadDashboard(api);
+      const execution = await executeAdminTask(client, task, () => loadDashboard(client, startedAt));
+      if (!isCurrent(client, startedAt)) return;
+      if (execution.refreshError instanceof AdminAuthError) {
+        clearSession(client);
+        setError('A tarefa foi confirmada pelo servidor, mas a sessão expirou ao atualizar os indicadores. Não repita a tarefa sem verificar o resultado.');
+        return;
+      }
       if (task === 'prazos') {
-        setMessage(`Alertas de prazo executados com sucesso. Disparados: ${display(result.disparados)}.`);
+        setMessage(`Alertas de prazo executados com sucesso. Disparados: ${display(execution.result.disparados)}.`);
       } else {
-        setMessage(`Varredura executada com sucesso. Placas: ${display(result.placas_verificadas)} · Novas multas: ${display(result.novas_multas)}.`);
+        setMessage(`Varredura executada com sucesso. Placas: ${display(execution.result.placas_verificadas)} · Novas multas: ${display(execution.result.novas_multas)}.`);
+      }
+      if (!execution.refreshed) {
+        setError('A tarefa foi confirmada pelo servidor, mas não foi possível atualizar os indicadores. Não repita a tarefa apenas por causa deste erro.');
       }
     } catch (cause) {
+      if (!isCurrent(client, startedAt)) return;
+      if (cause instanceof AdminAuthError) clearSession(client);
       setError(cause instanceof AdminAuthError ? cause.message : 'A tarefa não pôde ser concluída.');
     } finally {
-      setRunningTask(null);
+      if (isCurrent(client, startedAt)) setRunningTask(null);
     }
   }
 

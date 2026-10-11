@@ -229,7 +229,7 @@ Princípios de evolução:
 - Quatro telas acessíveis sem alterar HTML legado ou backend.
 - Funcionalidades demonstrativas identificadas de forma explícita.
 - Nenhum dado pessoal coletado sem destino funcional.
-- VM-04.05 não iniciada.
+- VM-04.06 não iniciada.
 
 ### VM-04.03 — Feedback, transparência e navegação
 
@@ -261,7 +261,7 @@ Princípios de evolução:
 - Feedback não duplica envio enquanto a requisição está em andamento e não renderiza HTML não confiável.
 - Respostas de feedback de sessão antiga não alteram a sessão atual.
 - Transparência não cria promessas jurídicas ou resultados inexistentes.
-- VM-04.05 não iniciada.
+- VM-04.06 não iniciada.
 
 ### VM-04.03.1 — Correção de feedback e navegação
 
@@ -288,7 +288,7 @@ Princípios de evolução:
 
 - Confirmar essas jornadas contra Express real, sessão real e navegador real na VPS.
 - Validar recarregamento, botão voltar, foco e acessibilidade em todos os viewports.
-- VM-04.05 não iniciada.
+- VM-04.06 não iniciada.
 
 ### VM-04.04 — Painel administrativo React
 
@@ -311,6 +311,7 @@ Princípios de evolução:
 - Serviço isolado: `frontend-react/src/services/adminApi.ts`; tipos em `frontend-react/src/types/admin.ts`.
 - O backend atual protege o painel por chave compartilhada `x-admin-secret`, sem identidade individual, RBAC ou auditoria de ações; isso permanece uma limitação operacional documentada, não uma autorização para criar autenticação paralela no frontend.
 - O painel não executa tarefas automaticamente ao abrir e não usa `dangerouslySetInnerHTML`.
+- O frontend bloqueia duplicidade enquanto a requisição está em andamento; idempotência durável e proteção contra retry/replay ainda precisam ser definidas no backend.
 - HTML legado, backend, banco e entradas públicas não foram alterados.
 
 #### Critérios de aceite
@@ -318,6 +319,35 @@ Princípios de evolução:
 - Painel acessível pela entrada React independente, com os contratos reais e sem dados fictícios.
 - Credencial removida ao sair e respostas 401/403 não expõem segredo nem permanecem na sessão visual.
 - Nenhuma integração administrativa é declarada homologada antes da validação na VPS.
+
+### VM-04.05 — Landing page, SEO e páginas públicas
+
+**Status:** implementada e testada localmente; homologação visual, SEO em produção e integração real pendentes.
+
+#### Checklist
+
+- [x] Preservar a landing pública como HTML inicial indexável, com conteúdo, textos, links, design e seções do HTML legado.
+- [x] Separar as entradas públicas: landing em `/index.html`, aplicação autenticada em `/app.html` e painel em `/admin.html`.
+- [x] Preservar consulta pública de placa usando `GET /v1/consulta-placa/:placa`, validação, rate limit, indisponibilidade e aviso de ausência de consulta oficial.
+- [x] Migrar interações da landing para TypeScript/React como progressive enhancement: consulta, alternância mensal/anual e lista de espera sem falso envio.
+- [x] Preservar termos, privacidade, instalação, manifest, service worker, robots e ícones na saída Vite.
+- [x] Adicionar canonical, Open Graph e metadados públicos sem transformar o conteúdo em página vazia dependente de JavaScript.
+- [x] Adicionar testes dos contratos públicos e das correções administrativas VM-04.04-A/B.
+- [ ] Homologar URLs, SEO, links, fontes, ativos, acessibilidade, consulta pública e compatibilidade do deploy Netlify na VPS.
+
+#### Evidências e limitações
+
+- A landing React utiliza a entrada pública `frontend-react/index.html` com HTML inicial preservado do legado e ilha TypeScript em `src/landing-main.tsx`; o app autenticado foi compatibilizado para `frontend-react/app.html`.
+- O formulário de lista de espera não possui endpoint configurado no legado nem no backend atual; a nova interação informa que nenhum dado foi enviado e não simula cadastro.
+- O endpoint de placa retorna `consulta_oficial: false` até credenciamento SENATRAN/Serpro; a landing não apresenta multas, IPVA, licenciamento ou resultados oficiais fictícios.
+- Não existe sitemap no material auditado; `robots.txt` e URLs documentais são preservados.
+- O backend, o HTML legado e o deploy publicado não foram alterados.
+
+#### Critérios de aceite
+
+- `/index.html` entrega texto e metadados sem depender da execução de JavaScript para indexação.
+- `/app.html`, `/admin.html`, `/termos.html`, `/privacidade.html` e `/instalar.html` são entradas/recursos distintos no build.
+- Nenhuma confirmação de lista de espera ou consulta oficial é exibida sem contrato real.
 
 ---
 
@@ -559,7 +589,7 @@ Princípios de evolução:
 
 ## Próxima sequência recomendada
 
-Não iniciar a VM-04.05 automaticamente. Após a homologação das VMs 04.01, 04.02, 04.03, 04.03.1 e 04.04 na VPS, a próxima sequência recomendada da Etapa 04 é:
+Não iniciar a VM-04.06 automaticamente. Após a homologação das VMs 04.01, 04.02, 04.03, 04.03.1, 04.04 e 04.05 na VPS, a próxima sequência recomendada da Etapa 04 é:
 
 1. concluir estados de erro, carregamento, vazio e paywall da jornada já migrada;
 2. migrar a tela de recursos/perfil com comparação visual formal e acessibilidade;

@@ -97,7 +97,7 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Health check e observabilidade.
 - [ ] Plano de rollback para o HTML legado.
 
-**Última atualização:** 11/10/2026 — VM-04.04 migrou o painel administrativo para uma entrada React independente, com cliente isolado para `x-admin-secret`, contratos reais de resumo/feedback/tarefas e 41 testes locais; typecheck e build passaram. Backend integrado, segurança operacional e comparação visual permanecem pendentes na VPS. Nenhuma funcionalidade integrada foi declarada aprovada.
+**Última atualização:** 11/10/2026 — VM-04.05 preparou a landing pública multi-page, documentos e ativos, além das correções de isolamento/refresh da VM-04.04; 49 testes locais passaram, typecheck e build passaram. Backend integrado, SEO em produção, segurança operacional e comparação visual permanecem pendentes na VPS. Nenhuma funcionalidade integrada foi declarada aprovada.
 
 ## VM-03 — repetir na VPS após as correções React
 
@@ -175,5 +175,19 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Validar tabelas vazias, erro de rede, carregamento, foco, teclado, leitura e viewports 320/360/390/430 px e desktop.
 - [ ] Comparar visualmente a entrada React com `6_CODIGO_FONTE/sistema/publico/admin.html`, sem declarar equivalência sem evidência.
 - [ ] Avaliar substituição futura da chave compartilhada por identidade individual, RBAC, auditoria e proteção contra replay antes de uso produtivo.
+- [ ] Definir idempotency key/controle transacional no backend para retries de tarefas administrativas; o bloqueio atual é apenas no frontend.
 
-**Atualização VM-04.04:** painel administrativo React implementado localmente; typecheck passou, 41 testes passaram e build multi-page gerou `index.html` e `admin.html`. Todos os cenários acima permanecem pendentes de homologação na VPS.
+**Atualização VM-04.04:** painel administrativo React implementado localmente; typecheck passou, 49 testes passaram no conjunto atual e build multi-page gerou `index.html`, `app.html` e `admin.html`. Todos os cenários acima permanecem pendentes de homologação na VPS.
+
+## VM-04.05 — repetir na VPS após a migração da landing
+
+- [ ] Confirmar que `/index.html` entrega o título, description, canonical, Open Graph, H1/H2/H3, links internos e conteúdo textual sem depender da execução de JavaScript.
+- [ ] Confirmar que `/app.html` continua abrindo a aplicação autenticada e que `/admin.html` continua isolado do JWT do usuário.
+- [ ] Comparar landing React com `6_CODIGO_FONTE/sistema/publico/index.html` em desktop e nos viewports móveis; validar fontes, ícones, gradientes, sombras, espaçamentos, animações e responsividade.
+- [ ] Validar links para `app.html`, `termos.html`, `privacidade.html` e `instalar.html`, além de manifest, service worker, ícones e `robots.txt`.
+- [ ] Enviar placas válidas e inválidas para `GET /v1/consulta-placa/:placa`; confirmar rate limit, erro de rede e que `consulta_oficial: false` não apresenta multa, IPVA, licenciamento ou recall como fato.
+- [ ] Confirmar que a lista de espera não afirma cadastro recebido enquanto não houver endpoint de recebimento configurado; nenhum dado deve ser enviado sem destino comprovado.
+- [ ] Verificar canonical/OG no domínio real, indexação e ausência de sitemap inexistente anunciado como disponível.
+- [ ] Confirmar compatibilidade da saída multi-page com o deploy atual do Netlify sem publicar ou substituir o site nesta etapa.
+
+**Atualização VM-04.05:** landing pública, entrada autenticada compatível, documentos legais e ativos foram preparados localmente; 49 testes passaram, typecheck e build multi-page passaram. SEO em produção, comparação visual e integração real permanecem pendentes na VPS.
