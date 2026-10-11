@@ -97,7 +97,7 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Health check e observabilidade.
 - [ ] Plano de rollback para o HTML legado.
 
-**Última atualização:** 11/10/2026 — VM-04.01 migrou veículos, CNH, débitos e consultas oficiais; VM-03 permanece com integração real pendente. Frontend validado com typecheck, 21 testes unitários/contratuais e build; backend integrado permanece pendente por falta de toolchain nativa no computador de desenvolvimento. Nenhuma funcionalidade integrada foi declarada aprovada.
+**Última atualização:** 11/10/2026 — VM-04.02 corrigiu a apresentação do SNE e o isolamento de respostas antigas, e migrou dívida ativa, frota, rede e parceiro como fluxos demonstrativos quando não há contrato real. Frontend validado com typecheck, 23 testes unitários/contratuais e build; backend integrado permanece pendente por falta de toolchain nativa no computador de desenvolvimento. Nenhuma funcionalidade integrada foi declarada aprovada.
 
 ## VM-03 — repetir na VPS após as correções React
 
@@ -124,3 +124,15 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Confirmar que respostas antigas não alteram veículo, CNH ou diagnóstico após troca de sessão.
 
 **Atualização VM-04.01:** quatro telas implementadas localmente; 21 testes passaram, mas todos os cenários acima permanecem pendentes de homologação integrada.
+
+## VM-04.02 — repetir na VPS após a migração
+
+- [ ] Confirmar que desconto SNE nunca é apresentado como garantido e que regras reais vêm do órgão competente.
+- [ ] Trocar de usuário durante carregamento de veículo/CNH e confirmar que a resposta antiga não altera a nova sessão.
+- [ ] Selecionar veículos diferentes e confirmar que o resumo e eventual associação da multa usam o identificador escolhido.
+- [ ] Confirmar que dívida ativa permanece claramente indisponível sem convênio e não aceita dados pessoais localmente.
+- [ ] Confirmar que o painel de frota e os cartões da rede são identificados como demonstrativos e não liberam cobrança/contato real.
+- [ ] Confirmar que o credenciamento de parceiros não simula sucesso nem coleta dados sem endpoint.
+- [ ] Validar navegação, foco, teclado e leitura das mensagens nos viewports 320/360/390/430 px e desktop.
+
+**Atualização VM-04.02:** correções e quatro telas implementadas localmente; 23 testes passaram, mas os cenários acima permanecem pendentes de homologação integrada e comparação visual.

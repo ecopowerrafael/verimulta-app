@@ -1,0 +1,7 @@
+import { Button } from '../../components/Button';
+import { Card } from '../../components/Card';
+import { PageHeader } from '../../components/PageHeader';
+
+export function ActiveDebtPage({ onBack, onConsultations }: { onBack: () => void; onConsultations: () => void }) {
+  return <section className="screen"><PageHeader title="Dívida ativa" subtitle="Consulta com seu consentimento" onBack={onBack} /><div className="content"><Card className="form-card"><div><label htmlFor="da-placa">Placa</label><input id="da-placa" placeholder="ABC1D23" disabled /></div><div><label htmlFor="da-renavam">Renavam</label><input id="da-renavam" placeholder="00000000000" inputMode="numeric" disabled /></div><div><label htmlFor="da-cpf">CPF do proprietário</label><input id="da-cpf" placeholder="000.000.000-00" inputMode="numeric" disabled /></div><Button disabled>Consulta indisponível</Button><p className="muted">A consulta real depende de convênio com a Fazenda ou Procuradoria estadual. Estes campos permanecem apenas como referência do fluxo legado; nenhum dado é enviado.</p></Card><Card className="notice"><span className="pill alert">CONSULTA NÃO CONECTADA</span><h2>Ainda não conseguimos consultar por você</h2><p>A dívida ativa é consultada na Fazenda ou na Procuradoria do seu estado, e o acesso depende de convênio ainda em andamento. Não vamos dizer que está tudo certo sem ter checado.</p><Button variant="secondary" onClick={onConsultations}>Abrir consultas oficiais</Button></Card></div></section>;
+}

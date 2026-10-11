@@ -134,7 +134,7 @@ Princípios de evolução:
 
 ## Etapa 04 — Conclusão do frontend React
 
-**Status:** em andamento; VM-04.01 implementada e testada localmente. Integração real pendente.
+**Status:** em andamento; VM-04.01 e VM-04.02 implementadas e testadas localmente. Integração real pendente.
 
 ### Checklist
 
@@ -194,6 +194,42 @@ Princípios de evolução:
 - IDs de veículo e multa preservados nos endpoints seguintes.
 - Dados oficiais não inventados e links externos mantidos no adaptador.
 - HTML legado permanece disponível e sem alterações.
+
+### VM-04.02 — Dívida ativa, frota, rede e parceiros
+
+**Status:** implementada e testada localmente; integrações reais pendentes.
+
+#### Correções da VM-04.01
+
+- [x] SNE apresentado como simulação de até 40%, condicionado à elegibilidade, sem alterar o backend.
+- [x] Erros de veículo e CNH descartados quando pertencem a uma sessão antiga.
+- [x] Seleção de veículo preservada; confirmação continua respeitando o contrato real, que permite associação opcional.
+- [x] Testes de resposta atrasada e troca de usuário adicionados.
+
+#### Telas migradas
+
+- [x] `t-divida`: campos e aviso do legado preservados, sem envio porque não existe consulta real de dívida ativa.
+- [x] `t-frota`: cards, restrição de plano e valores demonstrativos preservados, identificados como exemplo sem gestão operacional conectada.
+- [x] `t-rede`: categorias e cartões do legado preservados como exemplos não verificados; contato não simula ação real.
+- [x] `t-parceiro`: categorias, preços e periodicidades preservados; credenciamento permanece indisponível sem endpoint.
+- [x] Navegação de ida e volta integrada à jornada React.
+
+#### Evidências e pendências
+
+- Componentes: `frontend-react/src/pages/divida/ActiveDebtPage.tsx`, `frota/FleetPage.tsx`, `rede/NetworkPage.tsx` e `parceiro/PartnerPage.tsx`.
+- Não existem no backend atual endpoints de dívida ativa, frota operacional, rede credenciada ou credenciamento de parceiros.
+- Nenhum resultado oficial, parceiro real, cobrança ou sucesso de credenciamento foi inventado.
+- `npm run typecheck`: passou.
+- `npm test`: 23 testes passaram.
+- `npm run build`: passou.
+- Homologação com backend real, comparação visual e acessibilidade em viewports reais continuam pendentes na VPS.
+
+#### Critérios de aceite
+
+- Quatro telas acessíveis sem alterar HTML legado ou backend.
+- Funcionalidades demonstrativas identificadas de forma explícita.
+- Nenhum dado pessoal coletado sem destino funcional.
+- VM-04.03 não iniciada.
 
 ---
 
@@ -435,7 +471,7 @@ Princípios de evolução:
 
 ## Próxima sequência recomendada
 
-Não iniciar a VM-04.02 automaticamente. Quando a VM-04.01 for homologada na VPS, a próxima sequência recomendada da Etapa 04 é:
+Não iniciar a VM-04.03 automaticamente. Após a homologação das VMs 04.01 e 04.02 na VPS, a próxima sequência recomendada da Etapa 04 é:
 
 1. concluir estados de erro, carregamento, vazio e paywall da jornada já migrada;
 2. migrar a tela de recursos/perfil com comparação visual formal e acessibilidade;

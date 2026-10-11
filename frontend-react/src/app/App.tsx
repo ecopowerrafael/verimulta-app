@@ -20,10 +20,15 @@ import { VehiclePage } from '../pages/veiculo/VehiclePage';
 import { CnhPage } from '../pages/cnh/CnhPage';
 import { DebtsPage } from '../pages/debito/DebtsPage';
 import { OfficialConsultationsPage } from '../pages/consulta/OfficialConsultationsPage';
+import { ActiveDebtPage } from '../pages/divida/ActiveDebtPage';
+import { FleetPage } from '../pages/frota/FleetPage';
+import { NetworkPage } from '../pages/rede/NetworkPage';
+import { PartnerPage } from '../pages/parceiro/PartnerPage';
 import { webFileTransfer } from '../integrations/fileTransfer';
 import { webExternalNavigation } from '../integrations/externalNavigation';
+import { responseBelongsToSession } from '../services/sessionState';
 
-export type Screen = 'login' | 'register' | 'home' | 'scan' | 'analysis' | 'confirm' | 'diagnosis' | 'resources' | 'defense' | 'plans' | 'profile' | 'vehicle' | 'cnh' | 'debts' | 'consultations';
+export type Screen = 'login' | 'register' | 'home' | 'scan' | 'analysis' | 'confirm' | 'diagnosis' | 'resources' | 'defense' | 'plans' | 'profile' | 'vehicle' | 'cnh' | 'debts' | 'consultations' | 'active-debt' | 'fleet' | 'network' | 'partner';
 
 export interface AppModel {
   user: Usuario | null;
@@ -65,7 +70,7 @@ export function App() {
 
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(null), 3800); };
   const currentSessionToken = () => webCredentialStorage.read()?.token;
-  const isCurrentSession = (token: string | undefined) => Boolean(token && currentSessionToken() === token);
+  const isCurrentSession = (token: string | undefined) => responseBelongsToSession(token, currentSessionToken());
   const storeSession = (user: Usuario, token: string) => {
     webCredentialStorage.write({ token, usuario: user });
     setModel((old) => ({ ...old, user, pendingVehicle: pendingVehicleStorage.read(user.id) }));
@@ -143,7 +148,7 @@ export function App() {
     const token = currentSessionToken();
     setModel((old) => ({ ...old, vehicleError: null }));
     let summary;
-    try { summary = await api.vehicleSummary(id); } catch (error) { setModel((old) => ({ ...old, vehicleError: error instanceof Error ? error.message : 'Falha ao carregar o veículo.' })); throw error; }
+    try { summary = await api.vehicleSummary(id); } catch (error) { if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, vehicleError: error instanceof Error ? error.message : 'Falha ao carregar o veículo.' })); throw error; }
     if (!isCurrentSession(token)) return;
     setModel((old) => ({ ...old, selectedVehicleId: id, vehicleSummary: summary }));
   });
@@ -153,7 +158,7 @@ export function App() {
       const token = currentSessionToken();
       setModel((old) => ({ ...old, cnhError: null }));
       let cnh;
-      try { cnh = await api.cnh(); } catch (error) { setModel((old) => ({ ...old, cnhError: error instanceof Error ? error.message : 'Falha ao carregar a CNH.' })); throw error; }
+      try { cnh = await api.cnh(); } catch (error) { if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, cnhError: error instanceof Error ? error.message : 'Falha ao carregar a CNH.' })); throw error; }
       if (!isCurrentSession(token)) return;
       setModel((old) => ({ ...old, cnh }));
     });
@@ -172,7 +177,7 @@ export function App() {
     <main className="phone-shell">
       {screen === 'login' && <LoginPage busy={busy} onRegister={() => setScreen('register')} onSubmit={login} />}
       {screen === 'register' && <RegisterPage busy={busy} onBack={() => setScreen('login')} onSubmit={register} />}
-      {screen === 'home' && model.user && <HomePage user={model.user} vehicles={model.vehicles} fines={model.fines} selectedVehicleId={model.selectedVehicleId} pendingVehicle={model.pendingVehicle} busy={busy} onRetryVehicle={retryPendingVehicle} onScan={() => setScreen('scan')} onLogout={logout} onResources={() => withBusy(async () => { const token = currentSessionToken(); const resources = await api.listResources(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, resources })); setScreen('resources'); })} onVehicle={openVehicle} onCnh={openCnh} onDebts={() => setScreen('debts')} onConsultations={() => setScreen('consultations')} onProfile={() => setScreen('profile')} onDiagnosis={(id) => withBusy(async () => { const token = currentSessionToken(); const result = await api.diagnosis(id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, selectedFineId: id, diagnosis: result })); setScreen('diagnosis'); })} />}
+      {screen === 'home' && model.user && <HomePage user={model.user} vehicles={model.vehicles} fines={model.fines} selectedVehicleId={model.selectedVehicleId} pendingVehicle={model.pendingVehicle} busy={busy} onRetryVehicle={retryPendingVehicle} onScan={() => setScreen('scan')} onLogout={logout} onResources={() => withBusy(async () => { const token = currentSessionToken(); const resources = await api.listResources(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, resources })); setScreen('resources'); })} onVehicle={openVehicle} onCnh={openCnh} onDebts={() => setScreen('debts')} onActiveDebt={() => setScreen('active-debt')} onFleet={() => setScreen('fleet')} onNetwork={() => setScreen('network')} onConsultations={() => setScreen('consultations')} onPlans={() => setScreen('plans')} onProfile={() => setScreen('profile')} onDiagnosis={(id) => withBusy(async () => { const token = currentSessionToken(); const result = await api.diagnosis(id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, selectedFineId: id, diagnosis: result })); setScreen('diagnosis'); })} />}
       {screen === 'scan' && <ScanPage busy={busy} onBack={() => setScreen('home')} onManual={() => { setModel((old) => ({ ...old, fields: { origem: 'agente' } })); setScreen('confirm'); }} onFile={(file) => withBusy(async () => { const token = currentSessionToken(); setScreen('analysis'); const result = await api.readDocument(file); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, fields: result.campos })); setScreen('confirm'); if (!result.leu) notify(result.motivo ?? result.orientacao); })} />}
       {screen === 'analysis' && <AnalysisPage />}
       {screen === 'confirm' && <ConfirmPage busy={busy} initialFields={model.fields} onBack={() => setScreen('scan')} onSubmit={(fields) => withBusy(async () => { const token = currentSessionToken(); const result = await api.createFine(fields, model.selectedVehicleId ?? undefined); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, fields, selectedFineId: result.multa_id })); const diagnosis = await api.diagnosis(result.multa_id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, diagnosis })); setScreen('diagnosis'); })} />}
@@ -185,6 +190,10 @@ export function App() {
       {screen === 'cnh' && <CnhPage data={model.cnh} error={model.cnhError} busy={busy} onBack={() => setScreen('home')} onRetry={openCnh} onSave={saveCnh} />}
       {screen === 'debts' && <DebtsPage fines={model.fines} busy={busy} onBack={() => setScreen('home')} onDiagnosis={(id) => withBusy(async () => { const token = currentSessionToken(); const result = await api.diagnosis(id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, selectedFineId: id, diagnosis: result })); setScreen('diagnosis'); })} />}
       {screen === 'consultations' && <OfficialConsultationsPage onBack={() => setScreen('home')} />}
+      {screen === 'active-debt' && <ActiveDebtPage onBack={() => setScreen('home')} onConsultations={() => setScreen('consultations')} />}
+      {screen === 'fleet' && <FleetPage onBack={() => setScreen('home')} onPlans={() => setScreen('plans')} />}
+      {screen === 'network' && <NetworkPage onBack={() => setScreen('home')} onPartner={() => setScreen('partner')} />}
+      {screen === 'partner' && <PartnerPage onBack={() => setScreen('network')} />}
     </main>
     <Toast message={toast} />
   </>;
