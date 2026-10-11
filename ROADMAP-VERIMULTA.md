@@ -134,7 +134,7 @@ Princípios de evolução:
 
 ## Etapa 04 — Conclusão do frontend React
 
-**Status:** em andamento; VM-04.01, VM-04.02, VM-04.03 e VM-04.03.1 implementadas e testadas localmente. Integração real pendente.
+**Status:** em andamento; VM-04.01, VM-04.02, VM-04.03, VM-04.03.1 e VM-04.04 implementadas e testadas localmente. Integração real pendente.
 
 ### Checklist
 
@@ -229,7 +229,7 @@ Princípios de evolução:
 - Quatro telas acessíveis sem alterar HTML legado ou backend.
 - Funcionalidades demonstrativas identificadas de forma explícita.
 - Nenhum dado pessoal coletado sem destino funcional.
-- VM-04.04 não iniciada.
+- VM-04.05 não iniciada.
 
 ### VM-04.03 — Feedback, transparência e navegação
 
@@ -261,7 +261,7 @@ Princípios de evolução:
 - Feedback não duplica envio enquanto a requisição está em andamento e não renderiza HTML não confiável.
 - Respostas de feedback de sessão antiga não alteram a sessão atual.
 - Transparência não cria promessas jurídicas ou resultados inexistentes.
-- VM-04.04 não iniciada.
+- VM-04.05 não iniciada.
 
 ### VM-04.03.1 — Correção de feedback e navegação
 
@@ -288,7 +288,36 @@ Princípios de evolução:
 
 - Confirmar essas jornadas contra Express real, sessão real e navegador real na VPS.
 - Validar recarregamento, botão voltar, foco e acessibilidade em todos os viewports.
-- VM-04.04 não iniciada.
+- VM-04.05 não iniciada.
+
+### VM-04.04 — Painel administrativo React
+
+**Status:** implementada e testada localmente; integração real e homologação de segurança pendentes.
+
+#### Checklist
+
+- [x] Criar entrada React separada em `admin.html`, sem acoplar o painel à aplicação do usuário.
+- [x] Migrar indicadores, usuários, pagamentos, multas, emails, feedbacks e varreduras com os campos reais de `GET /v1/admin/resumo` e `GET /v1/admin/feedbacks`.
+- [x] Integrar as tarefas manuais `POST /v1/admin/tarefas/prazos` e `POST /v1/admin/tarefas/varredura` com confirmação, carregamento e bloqueio de duplicidade.
+- [x] Manter `x-admin-secret` somente em memória, sem localStorage, sessionStorage, URL, logs ou reaproveitamento do JWT do usuário.
+- [x] Tratar 401/403, estados vazios, erro, carregamento e limpeza da credencial ao sair.
+- [x] Preservar tokens visuais do painel legado e tabelas responsivas sem biblioteca de interface.
+- [x] Adicionar testes leves de contrato, autorização, limpeza de credencial e estado de tarefas.
+- [ ] Homologar o painel com `ADMIN_SECRET` real, resposta do Express, controle de acesso e comparação visual na VPS.
+
+#### Evidências e limitações
+
+- Componentes: `frontend-react/src/pages/admin/AdminApp.tsx`, `admin-main.tsx` e `styles/admin.css`.
+- Serviço isolado: `frontend-react/src/services/adminApi.ts`; tipos em `frontend-react/src/types/admin.ts`.
+- O backend atual protege o painel por chave compartilhada `x-admin-secret`, sem identidade individual, RBAC ou auditoria de ações; isso permanece uma limitação operacional documentada, não uma autorização para criar autenticação paralela no frontend.
+- O painel não executa tarefas automaticamente ao abrir e não usa `dangerouslySetInnerHTML`.
+- HTML legado, backend, banco e entradas públicas não foram alterados.
+
+#### Critérios de aceite
+
+- Painel acessível pela entrada React independente, com os contratos reais e sem dados fictícios.
+- Credencial removida ao sair e respostas 401/403 não expõem segredo nem permanecem na sessão visual.
+- Nenhuma integração administrativa é declarada homologada antes da validação na VPS.
 
 ---
 
@@ -530,7 +559,7 @@ Princípios de evolução:
 
 ## Próxima sequência recomendada
 
-Não iniciar a VM-04.04 automaticamente. Após a homologação das VMs 04.01, 04.02, 04.03 e 04.03.1 na VPS, a próxima sequência recomendada da Etapa 04 é:
+Não iniciar a VM-04.05 automaticamente. Após a homologação das VMs 04.01, 04.02, 04.03, 04.03.1 e 04.04 na VPS, a próxima sequência recomendada da Etapa 04 é:
 
 1. concluir estados de erro, carregamento, vazio e paywall da jornada já migrada;
 2. migrar a tela de recursos/perfil com comparação visual formal e acessibilidade;

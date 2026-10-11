@@ -97,7 +97,7 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Health check e observabilidade.
 - [ ] Plano de rollback para o HTML legado.
 
-**Última atualização:** 11/10/2026 — VM-04.02 corrigiu a apresentação do SNE e o isolamento de respostas antigas, e migrou dívida ativa, frota, rede e parceiro como fluxos demonstrativos quando não há contrato real. Frontend validado com typecheck, 23 testes unitários/contratuais e build; backend integrado permanece pendente por falta de toolchain nativa no computador de desenvolvimento. Nenhuma funcionalidade integrada foi declarada aprovada.
+**Última atualização:** 11/10/2026 — VM-04.04 migrou o painel administrativo para uma entrada React independente, com cliente isolado para `x-admin-secret`, contratos reais de resumo/feedback/tarefas e 41 testes locais; typecheck e build passaram. Backend integrado, segurança operacional e comparação visual permanecem pendentes na VPS. Nenhuma funcionalidade integrada foi declarada aprovada.
 
 ## VM-03 — repetir na VPS após as correções React
 
@@ -162,3 +162,18 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Navegar repetidamente para a mesma tela e confirmar que o histórico não cresce com entradas duplicadas.
 
 **Atualização VM-04.03.1:** correções implementadas localmente; 34 testes passaram, mas os cenários acima permanecem pendentes de homologação real.
+
+## VM-04.04 — repetir na VPS após a migração do painel administrativo
+
+- [ ] Abrir a entrada React `admin.html` com `ADMIN_SECRET` fornecido pelo mecanismo operacional seguro; confirmar que a chave não aparece em URL, storage, logs ou código compilado.
+- [ ] Confirmar 401 e 403 com chave ausente/incorreta, sem reaproveitar o JWT da aplicação do usuário e sem revelar o segredo na mensagem.
+- [ ] Comparar indicadores, usuários, pagamentos, multas, emails, feedbacks e varreduras com os campos reais de `GET /v1/admin/resumo` e `GET /v1/admin/feedbacks`.
+- [ ] Confirmar acesso restrito, exposição de PII somente para administradores autorizados e ausência de cache indevido nas respostas administrativas.
+- [ ] Executar alertas de prazo e varredura somente após confirmação explícita; confirmar que duplo clique não cria chamadas simultâneas e que sucesso só aparece após resposta da API.
+- [ ] Confirmar que abrir ou recarregar o painel não dispara tarefas operacionais automaticamente.
+- [ ] Sair do painel e confirmar limpeza da credencial em memória; expirar/revogar a chave e confirmar retorno seguro ao acesso.
+- [ ] Validar tabelas vazias, erro de rede, carregamento, foco, teclado, leitura e viewports 320/360/390/430 px e desktop.
+- [ ] Comparar visualmente a entrada React com `6_CODIGO_FONTE/sistema/publico/admin.html`, sem declarar equivalência sem evidência.
+- [ ] Avaliar substituição futura da chave compartilhada por identidade individual, RBAC, auditoria e proteção contra replay antes de uso produtivo.
+
+**Atualização VM-04.04:** painel administrativo React implementado localmente; typecheck passou, 41 testes passaram e build multi-page gerou `index.html` e `admin.html`. Todos os cenários acima permanecem pendentes de homologação na VPS.
