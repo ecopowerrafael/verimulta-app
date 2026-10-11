@@ -18,6 +18,7 @@ Este checklist deve ser executado somente em ambiente de staging isolado. Itens 
 - [ ] Upload inválido, excesso de tamanho, limpeza de temporários e falha do OCR.
 - [ ] Admin com segredo fornecido por canal seguro; registrar como bloqueio a ausência de identidade individual/RBAC/auditoria.
 - [ ] Webhooks inválidos, duplicados, atrasados e fora de ordem sem ativação indevida.
+- [ ] Confirmar `PRAGMA foreign_keys`, transações dos fluxos críticos e idempotência de eventos externos antes de qualquer uso produtivo.
 
 ## Dados e integrações
 

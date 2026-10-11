@@ -34,6 +34,10 @@ Status: preparação documental da VM-05.01. Nenhuma VPS foi acessada ou alterad
 
 O ponto de atenção é `better-sqlite3`, módulo nativo. A instalação deve ocorrer no próprio Linux compatível com Node 22, com toolchain disponível no provisionamento ou usando artefato comprovadamente compatível. Não instalar nem compilar isso nesta VM. `pdfkit`, `bcryptjs`, `multer`, `nodemailer`, `jsonwebtoken` e `qrcode` não alteram a estratégia de banco, mas devem ser instalados a partir do lockfile quando existir.
 
+## Recursos: medição versus hipótese
+
+O repositório não contém benchmark, volume de usuários, tamanho de uploads, concorrência ou perfil de memória; portanto não há capacidade mínima comprovada. Como hipótese inicial para dimensionar o primeiro staging, e não como requisito de produção, pode-se começar medindo uma VM de 1 vCPU, 1–2 GB de RAM e 10 GB de disco persistente. A justificativa é um único processo Node, SQLite local, logs e espaço para snapshots; OCR, PDF, SMTP e consultas externas podem alterar o consumo. Medir CPU, RSS, latência, crescimento do banco, temporários e I/O durante homologação antes de escolher produção. O dimensionamento final depende de RPO/RTO, retenção e carga reais.
+
 ## Bloqueios para homologação
 
 Domínio/TLS, provedor, sizing, supervisão, backup restaurável, credenciais de staging, SMTP de teste, webhook isolado, política de logs e evidência visual/HTTP ainda não foram definidos ou executados. A arquitetura acima é proposta, não homologação.
