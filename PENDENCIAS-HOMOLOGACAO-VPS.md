@@ -78,7 +78,7 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 ## Frontend e mobile
 
 - [x] Typecheck React — execução local concluída sem erros.
-- [x] Testes unitários/contratos — 19 testes passaram; integração HTTP continua pendente.
+- [x] Testes unitários/contratos — 21 testes passaram; integração HTTP continua pendente.
 - [x] Build Vite — build local concluído sem erros.
 - [ ] Jornadas reais em 320/360/390/430 px e desktop.
 - [ ] Comparação visual lado a lado com o HTML legado.
@@ -97,7 +97,7 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Health check e observabilidade.
 - [ ] Plano de rollback para o HTML legado.
 
-**Última atualização:** 11/10/2026 — VM-03 revisou cadastro parcial, expiração de sessão, isolamento de respostas antigas, recursos/defesa, cancelamento e restauração local. Frontend validado com typecheck, 19 testes unitários/contratuais e build; backend integrado permanece pendente por falta de toolchain nativa no computador de desenvolvimento. Nenhuma funcionalidade integrada foi declarada aprovada.
+**Última atualização:** 11/10/2026 — VM-04.01 migrou veículos, CNH, débitos e consultas oficiais; VM-03 permanece com integração real pendente. Frontend validado com typecheck, 21 testes unitários/contratuais e build; backend integrado permanece pendente por falta de toolchain nativa no computador de desenvolvimento. Nenhuma funcionalidade integrada foi declarada aprovada.
 
 ## VM-03 — repetir na VPS após as correções React
 
@@ -112,3 +112,15 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Sessão restaurada: validar identidade e plano contra endpoint real quando o contrato existir; atualmente a proposta de `GET /v1/eu` continua pendente.
 
 **Atualização VM-03:** correções locais implementadas e validadas com typecheck, 17 testes unitários/contratuais e build. Nenhum item acima foi aprovado para integração sem execução contra o backend real.
+
+## VM-04.01 — repetir na VPS após a migração
+
+- [ ] Selecionar cada veículo e confirmar `GET /v1/veiculos/:id/resumo` com isolamento do usuário autenticado.
+- [ ] Confirmar estado vazio, carregamento e erro na tela de veículos.
+- [ ] Confirmar pontos, limite, janela de 12 meses, validade e situação da CNH com dados reais.
+- [ ] Salvar validade da CNH e confirmar formato, autorização e persistência no backend.
+- [ ] Confirmar débitos somente com multas retornadas por `GET /v1/multas`, sem declarar débito oficial.
+- [ ] Abrir os sete links oficiais e validar finalidade em navegador/dispositivo móvel.
+- [ ] Confirmar que respostas antigas não alteram veículo, CNH ou diagnóstico após troca de sessão.
+
+**Atualização VM-04.01:** quatro telas implementadas localmente; 21 testes passaram, mas todos os cenários acima permanecem pendentes de homologação integrada.

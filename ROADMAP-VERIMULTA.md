@@ -134,7 +134,7 @@ Princípios de evolução:
 
 ## Etapa 04 — Conclusão do frontend React
 
-**Status:** planejada; não iniciada.
+**Status:** em andamento; VM-04.01 implementada e testada localmente. Integração real pendente.
 
 ### Checklist
 
@@ -158,6 +158,42 @@ Princípios de evolução:
 - Todas as jornadas priorizadas possuem equivalente React testado.
 - Nenhuma divergência visual ou funcional crítica sem decisão registrada.
 - HTML legado continua disponível para rollback.
+
+### VM-04.01 — Veículos, CNH, débitos e consultas oficiais
+
+**Status:** implementada e testada localmente; não homologada contra o Express real.
+
+#### Checklist
+
+- [x] Migrar `t-veiculo` com seleção explícita, resumo e histórico do veículo.
+- [x] Integrar `GET /v1/veiculos` e `GET /v1/veiculos/:id/resumo`.
+- [x] Usar o veículo selecionado, sem assumir a primeira posição da lista.
+- [x] Migrar `t-cnh` com pontos, limite, janela, situação e validade.
+- [x] Integrar `GET /v1/cnh` e `POST /v1/cnh`.
+- [x] Migrar `t-debitos` usando somente multas retornadas por `GET /v1/multas`.
+- [x] Migrar `t-consultas` com os sete links oficiais do HTML legado.
+- [x] Usar o adaptador de navegação externa existente.
+- [x] Cobrir contratos de veículo/CNH e preservar URLs oficiais em testes.
+- [ ] Homologar os quatro fluxos com Express, banco descartável e sessão real na VPS.
+
+#### Evidências
+
+- Componentes: `frontend-react/src/pages/veiculo/VehiclePage.tsx`, `cnh/CnhPage.tsx`, `debito/DebtsPage.tsx` e `consulta/OfficialConsultationsPage.tsx`.
+- Contratos: `frontend-react/src/services/verimultaApi.ts` e `frontend-react/src/services/verimultaApi.test.ts`.
+- Links centralizados em `frontend-react/src/integrations/officialConsultations.ts`.
+- Nenhuma consulta governamental foi automatizada ou apresentada como resultado oficial.
+
+#### Pendências
+
+- Validar respostas reais, autorização por usuário, estados de erro e visual nos viewports da VPS/homologação.
+- Validar que a fonte oficial do backend continua desligada/explicada quando não houver credenciamento.
+
+#### Critérios de aceite
+
+- Quatro telas acessíveis pela jornada React, com estados vazio, carregamento e erro.
+- IDs de veículo e multa preservados nos endpoints seguintes.
+- Dados oficiais não inventados e links externos mantidos no adaptador.
+- HTML legado permanece disponível e sem alterações.
 
 ---
 
@@ -399,7 +435,7 @@ Princípios de evolução:
 
 ## Próxima sequência recomendada
 
-Não iniciar a Etapa 04 automaticamente. Quando a Etapa 03 for homologada na VPS, a primeira sequência recomendada da Etapa 04 é:
+Não iniciar a VM-04.02 automaticamente. Quando a VM-04.01 for homologada na VPS, a próxima sequência recomendada da Etapa 04 é:
 
 1. concluir estados de erro, carregamento, vazio e paywall da jornada já migrada;
 2. migrar a tela de recursos/perfil com comparação visual formal e acessibilidade;

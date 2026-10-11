@@ -80,4 +80,13 @@ describe('contratos da jornada de multa', () => {
     expect(client.calls[0].options.json).toEqual({ multa_id: 41 });
     expect(client.calls[1].path).toBe('/v1/recursos/17/pdf');
   });
+
+  it('mantém veículos e CNH nos contratos reais do backend', async () => {
+    const client = fakeClient(); const api = createVerimultaApi(client as never);
+    await api.vehicleSummary(12);
+    await api.cnh();
+    await api.updateCnh('2030-04-05');
+    expect(client.calls.map((call) => call.path)).toEqual(['/v1/veiculos/12/resumo', '/v1/cnh', '/v1/cnh']);
+    expect(client.calls[2].options.json).toEqual({ validade: '2030-04-05' });
+  });
 });

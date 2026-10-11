@@ -20,6 +20,35 @@ export interface Veiculo {
   criado_em?: string;
 }
 
+export interface VeiculoResumo {
+  veiculo: Pick<Veiculo, 'id' | 'placa' | 'modelo' | 'renavam'>;
+  multas: {
+    quantidade: number;
+    valor_total: number;
+    ultimas: Array<{ ait: string | null; descricao: string | null; valor: number | null; data_infracao: string | null }>;
+  };
+  nao_conectado: {
+    itens: string[];
+    motivo: string;
+    enquanto_isso: string;
+  };
+}
+
+export interface CnhResumo {
+  pontos: number;
+  limite: number;
+  gravissimas: number;
+  restam: number;
+  situacao: 'regular' | 'atenção' | 'limite atingido' | string;
+  janela: { de: string; ate: string };
+  multas_consideradas: number;
+  multas_sem_pontuacao: number;
+  cnh_validade: string | null;
+  dias_para_vencer_cnh: number | null;
+  origem: string;
+  aviso: string;
+}
+
 export interface Multa {
   id: number;
   ait: string | null;

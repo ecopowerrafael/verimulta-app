@@ -1,5 +1,5 @@
 import { ApiClient } from './apiClient';
-import type { CamposMulta, CheckoutResposta, DefesaCriada, Diagnostico, LeituraDocumento, Multa, Planos, Recurso, Sessao, Usuario, Veiculo } from '../types/api';
+import type { CamposMulta, CheckoutResposta, CnhResumo, DefesaCriada, Diagnostico, LeituraDocumento, Multa, Planos, Recurso, Sessao, Usuario, Veiculo, VeiculoResumo } from '../types/api';
 
 export const createVerimultaApi = (client: ApiClient) => ({
   login: (email: string, senha: string) => client.request<Sessao>('/v1/auth/login', { method: 'POST', json: { email, senha } }),
@@ -12,6 +12,9 @@ export const createVerimultaApi = (client: ApiClient) => ({
     const existing = (await client.request<Veiculo[]>('/v1/veiculos')).find((vehicle) => vehicle.placa.toUpperCase() === placa);
     return existing ?? client.request<Veiculo>('/v1/veiculos', { method: 'POST', json: { ...input, placa } });
   },
+  vehicleSummary: (id: number) => client.request<VeiculoResumo>(`/v1/veiculos/${id}/resumo`),
+  cnh: () => client.request<CnhResumo>('/v1/cnh'),
+  updateCnh: (validade: string | null) => client.request<{ ok: boolean; cnh_validade: string | null }>('/v1/cnh', { method: 'POST', json: { validade } }),
   listFines: () => client.request<Multa[]>('/v1/multas'),
   readDocument: async (file: File): Promise<LeituraDocumento> => {
     const form = new FormData();

@@ -16,10 +16,14 @@ import { ResourcesPage } from '../pages/recurso/ResourcesPage';
 import { DefensePage } from '../pages/recurso/DefensePage';
 import { PlansPage } from '../pages/assinatura/PlansPage';
 import { ProfilePage } from '../pages/perfil/ProfilePage';
+import { VehiclePage } from '../pages/veiculo/VehiclePage';
+import { CnhPage } from '../pages/cnh/CnhPage';
+import { DebtsPage } from '../pages/debito/DebtsPage';
+import { OfficialConsultationsPage } from '../pages/consulta/OfficialConsultationsPage';
 import { webFileTransfer } from '../integrations/fileTransfer';
 import { webExternalNavigation } from '../integrations/externalNavigation';
 
-export type Screen = 'login' | 'register' | 'home' | 'scan' | 'analysis' | 'confirm' | 'diagnosis' | 'resources' | 'defense' | 'plans' | 'profile';
+export type Screen = 'login' | 'register' | 'home' | 'scan' | 'analysis' | 'confirm' | 'diagnosis' | 'resources' | 'defense' | 'plans' | 'profile' | 'vehicle' | 'cnh' | 'debts' | 'consultations';
 
 export interface AppModel {
   user: Usuario | null;
@@ -32,9 +36,14 @@ export interface AppModel {
   defense: DefesaCriada | null;
   plans: Planos | null;
   pendingVehicle: VeiculoPendente | null;
+  selectedVehicleId: number | null;
+  vehicleSummary: import('../types/api').VeiculoResumo | null;
+  cnh: import('../types/api').CnhResumo | null;
+  vehicleError: string | null;
+  cnhError: string | null;
 }
 
-const emptyModel = (): AppModel => ({ user: null, vehicles: [], fines: [], fields: {}, diagnosis: null, selectedFineId: null, resources: [], defense: null, plans: null, pendingVehicle: null });
+const emptyModel = (): AppModel => ({ user: null, vehicles: [], fines: [], fields: {}, diagnosis: null, selectedFineId: null, resources: [], defense: null, plans: null, pendingVehicle: null, selectedVehicleId: null, vehicleSummary: null, cnh: null, vehicleError: null, cnhError: null });
 
 export function App() {
   const sessionExpiredRef = useRef(false);
@@ -73,7 +82,7 @@ export function App() {
     const pendingVehicle = userId ? pendingVehicleStorage.read(userId) : null;
     const resolvedPending = pendingVehicle && vehicles.some((vehicle) => vehicle.placa.toUpperCase() === pendingVehicle.placa.toUpperCase());
     if (resolvedPending && userId) pendingVehicleStorage.clear(userId);
-    setModel((old) => ({ ...old, vehicles, fines, pendingVehicle: resolvedPending ? null : pendingVehicle ?? old.pendingVehicle }));
+    setModel((old) => ({ ...old, vehicles, fines, selectedVehicleId: old.selectedVehicleId && vehicles.some((vehicle) => vehicle.id === old.selectedVehicleId) ? old.selectedVehicleId : null, vehicleSummary: old.selectedVehicleId && vehicles.some((vehicle) => vehicle.id === old.selectedVehicleId) ? old.vehicleSummary : null, pendingVehicle: resolvedPending ? null : pendingVehicle ?? old.pendingVehicle }));
     return true;
   };
   const logout = () => { authOperationRef.current += 1; webCredentialStorage.clear(); setModel(emptyModel()); setScreen('login'); setCancellationRequested(false); };
@@ -98,7 +107,7 @@ export function App() {
     let vehiclePending = false;
     if (pendingVehicle) {
       pendingVehicleStorage.write(result.usuario.id, pendingVehicle);
-      try { await api.ensureVehicle(pendingVehicle); pendingVehicleStorage.clear(result.usuario.id); setModel((old) => ({ ...old, pendingVehicle: null })); } catch { vehiclePending = true; setModel((old) => ({ ...old, pendingVehicle })); }
+      try { const vehicle = await api.ensureVehicle(pendingVehicle); pendingVehicleStorage.clear(result.usuario.id); setModel((old) => ({ ...old, pendingVehicle: null, selectedVehicleId: vehicle.id })); } catch { vehiclePending = true; setModel((old) => ({ ...old, pendingVehicle })); }
     }
     try { await loadDashboard(result.token); } catch (error) {
       if (webCredentialStorage.read()?.token !== result.token) return;
@@ -129,19 +138,53 @@ export function App() {
     notify('Veículo cadastrado com sucesso.');
   });
 
+  const openVehicle = () => setScreen('vehicle');
+  const selectVehicle = (id: number) => withBusy(async () => {
+    const token = currentSessionToken();
+    setModel((old) => ({ ...old, vehicleError: null }));
+    let summary;
+    try { summary = await api.vehicleSummary(id); } catch (error) { setModel((old) => ({ ...old, vehicleError: error instanceof Error ? error.message : 'Falha ao carregar o veículo.' })); throw error; }
+    if (!isCurrentSession(token)) return;
+    setModel((old) => ({ ...old, selectedVehicleId: id, vehicleSummary: summary }));
+  });
+  const openCnh = () => {
+    setScreen('cnh');
+    void withBusy(async () => {
+      const token = currentSessionToken();
+      setModel((old) => ({ ...old, cnhError: null }));
+      let cnh;
+      try { cnh = await api.cnh(); } catch (error) { setModel((old) => ({ ...old, cnhError: error instanceof Error ? error.message : 'Falha ao carregar a CNH.' })); throw error; }
+      if (!isCurrentSession(token)) return;
+      setModel((old) => ({ ...old, cnh }));
+    });
+  };
+  const saveCnh = (validade: string | null) => withBusy(async () => {
+    const token = currentSessionToken();
+    const result = await api.updateCnh(validade);
+    if (!isCurrentSession(token)) return;
+    const cnh = await api.cnh();
+    if (!isCurrentSession(token)) return;
+    setModel((old) => ({ ...old, cnh }));
+    notify(result.ok ? 'Validade salva.' : 'Não foi possível salvar.');
+  });
+
   return <>
     <main className="phone-shell">
       {screen === 'login' && <LoginPage busy={busy} onRegister={() => setScreen('register')} onSubmit={login} />}
       {screen === 'register' && <RegisterPage busy={busy} onBack={() => setScreen('login')} onSubmit={register} />}
-      {screen === 'home' && model.user && <HomePage user={model.user} vehicles={model.vehicles} fines={model.fines} pendingVehicle={model.pendingVehicle} busy={busy} onRetryVehicle={retryPendingVehicle} onScan={() => setScreen('scan')} onLogout={logout} onResources={() => withBusy(async () => { const token = currentSessionToken(); const resources = await api.listResources(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, resources })); setScreen('resources'); })} onProfile={() => setScreen('profile')} onDiagnosis={(id) => withBusy(async () => { const token = currentSessionToken(); const result = await api.diagnosis(id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, selectedFineId: id, diagnosis: result })); setScreen('diagnosis'); })} />}
+      {screen === 'home' && model.user && <HomePage user={model.user} vehicles={model.vehicles} fines={model.fines} selectedVehicleId={model.selectedVehicleId} pendingVehicle={model.pendingVehicle} busy={busy} onRetryVehicle={retryPendingVehicle} onScan={() => setScreen('scan')} onLogout={logout} onResources={() => withBusy(async () => { const token = currentSessionToken(); const resources = await api.listResources(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, resources })); setScreen('resources'); })} onVehicle={openVehicle} onCnh={openCnh} onDebts={() => setScreen('debts')} onConsultations={() => setScreen('consultations')} onProfile={() => setScreen('profile')} onDiagnosis={(id) => withBusy(async () => { const token = currentSessionToken(); const result = await api.diagnosis(id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, selectedFineId: id, diagnosis: result })); setScreen('diagnosis'); })} />}
       {screen === 'scan' && <ScanPage busy={busy} onBack={() => setScreen('home')} onManual={() => { setModel((old) => ({ ...old, fields: { origem: 'agente' } })); setScreen('confirm'); }} onFile={(file) => withBusy(async () => { const token = currentSessionToken(); setScreen('analysis'); const result = await api.readDocument(file); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, fields: result.campos })); setScreen('confirm'); if (!result.leu) notify(result.motivo ?? result.orientacao); })} />}
       {screen === 'analysis' && <AnalysisPage />}
-      {screen === 'confirm' && <ConfirmPage busy={busy} initialFields={model.fields} onBack={() => setScreen('scan')} onSubmit={(fields) => withBusy(async () => { const token = currentSessionToken(); const result = await api.createFine(fields, model.vehicles[0]?.id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, fields, selectedFineId: result.multa_id })); const diagnosis = await api.diagnosis(result.multa_id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, diagnosis })); setScreen('diagnosis'); })} />}
+      {screen === 'confirm' && <ConfirmPage busy={busy} initialFields={model.fields} onBack={() => setScreen('scan')} onSubmit={(fields) => withBusy(async () => { const token = currentSessionToken(); const result = await api.createFine(fields, model.selectedVehicleId ?? undefined); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, fields, selectedFineId: result.multa_id })); const diagnosis = await api.diagnosis(result.multa_id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, diagnosis })); setScreen('diagnosis'); })} />}
       {screen === 'diagnosis' && model.diagnosis && <DiagnosisPage diagnosis={model.diagnosis} onBack={() => setScreen('home')} onPlans={() => setScreen('plans')} onDefense={() => withBusy(async () => { if (!model.selectedFineId) return; const token = currentSessionToken(); const defense = await api.createDefense(model.selectedFineId); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, defense })); setScreen('defense'); })} />}
       {screen === 'resources' && <ResourcesPage resources={model.resources} busy={busy} onBack={() => setScreen('home')} onRefresh={() => withBusy(async () => { const token = currentSessionToken(); const resources = await api.listResources(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, resources })); })} onOpenExisting={(resource) => withBusy(async () => { const token = currentSessionToken(); const blob = await api.downloadDefensePdf(resource.id); if (!isCurrentSession(token)) return; webFileTransfer.download(blob, `defesa-previa-recurso-${resource.id}.pdf`); notify('Defesa existente aberta em PDF.'); })} />}
       {screen === 'defense' && model.defense && <DefensePage defense={model.defense} busy={busy} onBack={() => setScreen('resources')} onDownload={() => withBusy(async () => { const token = currentSessionToken(); const blob = await api.downloadDefensePdf(model.defense!.recurso_id); if (!isCurrentSession(token)) return; webFileTransfer.download(blob, 'defesa-previa-verimulta.pdf'); })} />}
       {screen === 'plans' && <PlansPage plans={model.plans} busy={busy} onBack={() => setScreen('home')} onLoad={() => withBusy(async () => { const token = currentSessionToken(); const plans = await api.listPlans(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, plans })); })} onCheckout={(key) => withBusy(async () => { const token = currentSessionToken(); const result = await api.checkout(key); if (!isCurrentSession(token)) return; if (result.checkout_url) webExternalNavigation.open(result.checkout_url); else notify(result.aviso ?? 'Checkout criado. A ativação depende do pagamento confirmado pelo backend.'); })} />}
       {screen === 'profile' && model.user && <ProfilePage user={model.user} busy={busy} cancellationRequested={cancellationRequested} onBack={() => setScreen('home')} onPlans={() => setScreen('plans')} onCancel={() => withBusy(async () => { const token = currentSessionToken(); const result = await api.cancelSubscription(); if (!isCurrentSession(token)) return; setCancellationRequested(true); notify(result.mensagem); })} onDownloadData={() => withBusy(async () => { const token = currentSessionToken(); const blob = await api.downloadPersonalData(); if (!isCurrentSession(token)) return; webFileTransfer.download(blob, 'meus-dados-verimulta.json'); })} onDeleteAccount={() => withBusy(async () => { const token = currentSessionToken(); const result = await api.deleteAccount(); if (!isCurrentSession(token)) return; notify(result.mensagem); logout(); })} onLogout={logout} />}
+      {screen === 'vehicle' && <VehiclePage vehicles={model.vehicles} selectedVehicleId={model.selectedVehicleId} summary={model.vehicleSummary} error={model.vehicleError} busy={busy} onBack={() => setScreen('home')} onSelectVehicle={selectVehicle} onScan={() => setScreen('scan')} />}
+      {screen === 'cnh' && <CnhPage data={model.cnh} error={model.cnhError} busy={busy} onBack={() => setScreen('home')} onRetry={openCnh} onSave={saveCnh} />}
+      {screen === 'debts' && <DebtsPage fines={model.fines} busy={busy} onBack={() => setScreen('home')} onDiagnosis={(id) => withBusy(async () => { const token = currentSessionToken(); const result = await api.diagnosis(id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, selectedFineId: id, diagnosis: result })); setScreen('diagnosis'); })} />}
+      {screen === 'consultations' && <OfficialConsultationsPage onBack={() => setScreen('home')} />}
     </main>
     <Toast message={toast} />
   </>;
