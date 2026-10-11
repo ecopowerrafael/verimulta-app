@@ -1,0 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap');
+:root {
+  --ink:#0E1319; --papel:#F2F4F1; --branco:#fff;
+  --placa:#0B3C7E; --placa2:#0E4C9E; --noite:#071E42;
+  --sinal:#FFC933; --sinal2:#FFB300;
+  --ok:#0E8A5F; --ok2:#39B489; --vicio:#D6453A;
+  --cinza:#61707F; --linha:#E4E8E1;
+  --r:20px; --r2:14px;
+  --sombra:0 10px 30px rgba(7,30,66,.10);
+  --sombra2:0 18px 44px rgba(7,30,66,.16);
+}

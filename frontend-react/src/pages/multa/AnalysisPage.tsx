@@ -1,0 +1,1 @@
+export function AnalysisPage() { return <section className="screen analysis-screen"><div className="analysis-mark">✓</div><h1>Lendo sua notificação…</h1><p>Estamos organizando os campos para você conferir.</p><div className="progress"><i /></div></section>; }

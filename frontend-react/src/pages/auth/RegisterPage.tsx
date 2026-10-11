@@ -1,0 +1,11 @@
+import { useState } from 'react';
+import { Button } from '../../components/Button';
+import { PageHeader } from '../../components/PageHeader';
+
+export interface RegisterInput { nome: string; cpf: string; email: string; senha: string; consentimento: true; placa: string; }
+export function RegisterPage({ busy, onBack, onSubmit }: { busy: boolean; onBack: () => void; onSubmit: (input: RegisterInput) => void }) {
+  const [form, setForm] = useState({ nome: '', cpf: '', email: '', senha: '', placa: '' }); const [consent, setConsent] = useState(false);
+  const update = (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) => setForm((old) => ({ ...old, [key]: event.target.value }));
+  return <section className="screen"><PageHeader title="Criar conta grátis" subtitle="Sem cartão · veja suas multas em 1 minuto" onBack={onBack} /><div className="content"><form onSubmit={(event) => { event.preventDefault(); if (!form.nome || !form.email || form.senha.length < 8 || !consent) return; onSubmit({ ...form, placa: form.placa.toUpperCase(), consentimento: true }); }}><Field label="Nome completo" value={form.nome} onChange={update('nome')} placeholder="Seu nome" /><Field label="CPF" value={form.cpf} onChange={update('cpf')} placeholder="000.000.000-00" inputMode="numeric" /><Field label="E-mail" type="email" value={form.email} onChange={update('email')} placeholder="voce@email.com" /><Field label="Senha" type="password" value={form.senha} onChange={update('senha')} placeholder="Crie uma senha" /><Field label="Placa do seu veículo" value={form.placa} onChange={update('placa')} placeholder="ABC1D23" /><label className="consent"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /> <span>Li e aceito os Termos de Uso e a Política de Privacidade, conforme a LGPD.</span></label><Button type="submit" disabled={busy}>{busy ? 'Criando sua conta…' : 'Criar conta e ver minhas multas'}</Button></form></div></section>;
+}
+function Field(props: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) { const { label, ...input } = props; return <div className="field"><label htmlFor={input.id}>{label}</label><input {...input} /></div>; }

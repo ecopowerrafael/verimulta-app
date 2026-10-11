@@ -1,0 +1,7 @@
+import { useEffect } from 'react';
+import { Button } from '../../components/Button';
+import { Card } from '../../components/Card';
+import { PageHeader } from '../../components/PageHeader';
+import type { Planos } from '../../types/api';
+
+export function PlansPage({ plans, busy, onBack, onLoad, onCheckout }: { plans: Planos | null; busy: boolean; onBack: () => void; onLoad: () => void; onCheckout: (key: string) => void }) { useEffect(() => { if (!plans) onLoad(); }, [plans]); const entries = plans ? Object.entries(plans).filter(([key, plan]) => key !== 'gratis' && plan.preco > 0) : []; return <section className="screen"><PageHeader title="Planos Verimulta" subtitle="Cancele em 1 toque" onBack={onBack} /><div className="content">{entries.map(([key, plan]) => <Card className="plan-card" key={key}><span className="pill pro">{plan.nome}</span><strong>R$ {plan.preco.toFixed(2).replace('.', ',')}<small>/mês</small></strong><p className="muted">{plan.veiculos} veículo(s) · {plan.cnhs} CNH(s) · defesa prévia</p><Button variant={key === 'combo1' ? 'yellow' : 'primary'} disabled={busy} onClick={() => onCheckout(key)}>{busy ? 'Abrindo checkout…' : 'Assinar e desbloquear'}</Button></Card>)}{!plans && <Card><p className="muted">Carregando planos…</p></Card>}<div className="notice">O frontend não ativa assinaturas. A liberação depende do pagamento confirmado pelo backend/webhook.</div></div></section>; }

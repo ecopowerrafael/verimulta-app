@@ -24,6 +24,11 @@ node_modules/
 *.db
 *.db-wal
 *.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.backup
+dist/
 
 # Tunel (55 MB, baixado na maquina)
 cloudflared.exe
