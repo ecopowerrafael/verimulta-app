@@ -1,6 +1,6 @@
 // Verimulta — Service Worker: cache somente do shell público e de ativos.
 // Respostas de API, sessão, checkout e painel administrativo nunca entram no cache.
-const CACHE = 'verimulta-public-v2';
+const CACHE = 'verimulta-public-v3';
 const ARQUIVOS = ['./','index.html','app.html','termos.html','privacidade.html','instalar.html','manifest.json','robots.txt','icones/icone-192.png','icones/icone-512.png','icones/favicon.png','icones/social.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS)).then(()=>self.skipWaiting()));
@@ -24,6 +24,11 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(e.request, copia)).catch(()=>{});
       }
       return r;
-    }).catch(() => caches.match(e.request).then(m => m || caches.match('app.html')))
+    }).catch(() => {
+      // Só navegações podem receber o shell offline. Nunca devolva HTML para
+      // JS, CSS, imagens ou respostas públicas com outro MIME type.
+      if (e.request.mode !== 'navigate') return Response.error();
+      return caches.match(e.request).then(m => m || caches.match('app.html'));
+    })
   );
 });

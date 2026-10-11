@@ -1,5 +1,12 @@
 node_modules/
 verimulta.db*
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+uploads/
 *.log
 nohup.out
 /tmp

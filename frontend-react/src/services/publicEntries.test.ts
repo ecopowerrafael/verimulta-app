@@ -29,6 +29,6 @@ describe('public entries and PWA policy', () => {
     expect(serviceWorker).toContain("url.pathname === '/admin.html'");
     expect(serviceWorker).toContain("e.request.headers.has('authorization')");
     expect(serviceWorker).toContain("e.request.headers.has('x-admin-secret')");
-    expect(serviceWorker).toContain("verimulta-public-v2");
+    expect(serviceWorker).toContain("verimulta-public-v3");
   });
 });

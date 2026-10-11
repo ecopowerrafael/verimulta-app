@@ -196,7 +196,7 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 
 - [ ] Comparar todas as telas do app, landing e admin com o HTML original em 320/360/390/430/768/1366 px, registrando evidência visual e divergências.
 - [ ] Confirmar cadastro, consentimento, login, troca/expiração de sessão, veículo, OCR, confirmação, diagnóstico, defesa/PDF, CNH, débitos, consultas, dívida ativa, frota, rede, parceiro, planos, checkout, perfil, LGPD, feedback, transparência, logout e histórico.
-- [ ] Confirmar que o service worker instalado abre `/app.html`, não cacheia `/v1`, checkout, admin ou respostas autenticadas e atualiza do cache anterior `verimulta-v1` para `verimulta-public-v2`.
+- [ ] Confirmar que o service worker instalado abre `/app.html`, não cacheia `/v1`, checkout, admin ou respostas autenticadas e atualiza do cache anterior para `verimulta-public-v3`.
 - [ ] Validar a landing com uma ferramenta de inspeção de metadados/crawler: uma única description, canonical, Open Graph, headings, links internos, robots e ausência de sitemap anunciado sem arquivo.
 - [ ] Repetir consulta pública com placa válida, inválida, excesso de chamadas, indisponibilidade e resposta `consulta_oficial: false`; confirmar ausência de dados oficiais inventados.
 - [ ] Confirmar que a lista de espera não envia nem afirma receber dados até existir endpoint operacional.
@@ -205,3 +205,16 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Registrar como bloqueantes para produção a falta de autenticação administrativa individual/RBAC/auditoria, integrações oficiais, endpoint de lista de espera, checkout/webhook real e comparação visual não executada.
 
 **Atualização VM-04.06:** auditoria e correções locais concluídas; 52 testes passaram, typecheck e build multi-page passaram. A Etapa 04 não está homologada nem pronta para produção sem os cenários acima.
+
+## VM-05.01 — preparação de infraestrutura e homologação
+
+- [ ] Provisionar staging Linux com Node 22.x, processo sem root, proxy HTTPS e `/v1/saude` monitorado.
+- [ ] Definir domínio, sizing, RPO/RTO, retenção de logs, backup criptografado e restauração comprovada.
+- [ ] Separar staging/produção por banco, secrets, webhook, SMTP e gateway; manter `GATEWAY=demo` somente em staging.
+- [ ] Validar instalação Linux do módulo nativo `better-sqlite3` sem copiar artefatos incompatíveis.
+- [ ] Validar CORS, proxy confiável, rate limits, upload temporário, limpeza, SMTP/OCR e timeout das integrações.
+- [ ] Homologar autenticação, isolamento por usuário/veículo, webhooks idempotentes e jobs de prazo/varredura.
+- [ ] Executar o checklist de `CHECKLIST-HOMOLOGACAO-VPS.md` e anexar evidências.
+- [ ] Não iniciar SQLite → PostgreSQL antes de inventário, backup restaurável, schema versionado e rollback ensaiado.
+
+**Atualização VM-05.01:** diagnóstico, plano VPS, plano SQLite/PostgreSQL, checklist e `.env.example` foram preparados localmente; nenhum deploy, acesso à VPS ou migração de banco foi executado. O Service Worker foi corrigido para não devolver `app.html` a recursos não navegacionais; a validação em navegador real permanece pendente.
