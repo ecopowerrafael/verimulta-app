@@ -7,6 +7,11 @@ export const createVerimultaApi = (client: ApiClient) => ({
     client.request<Sessao & { consentimento_lgpd: { registrado: boolean; versao_termos: string; politica: string } }>('/v1/auth/register', { method: 'POST', json: input }),
   listVehicles: () => client.request<Veiculo[]>('/v1/veiculos'),
   createVehicle: (input: { placa: string; modelo?: string }) => client.request<Veiculo>('/v1/veiculos', { method: 'POST', json: input }),
+  ensureVehicle: async (input: { placa: string; modelo?: string }) => {
+    const placa = input.placa.trim().toUpperCase();
+    const existing = (await client.request<Veiculo[]>('/v1/veiculos')).find((vehicle) => vehicle.placa.toUpperCase() === placa);
+    return existing ?? client.request<Veiculo>('/v1/veiculos', { method: 'POST', json: { ...input, placa } });
+  },
   listFines: () => client.request<Multa[]>('/v1/multas'),
   readDocument: async (file: File): Promise<LeituraDocumento> => {
     const form = new FormData();

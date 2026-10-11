@@ -47,4 +47,37 @@ describe('contratos da jornada de multa', () => {
     expect(client.calls[4].options.json).toEqual({ plano: 'combo1' });
     expect(client.calls[7].options.method).toBe('DELETE');
   });
+
+  it('não duplica a placa quando o cadastro é recuperado após uma resposta perdida', async () => {
+    const calls: Array<{ path: string; options: Record<string, unknown> }> = [];
+    const client = { request: async <T>(path: string, options: Record<string, unknown> = {}) => {
+      calls.push({ path, options });
+      return [{ id: 9, placa: 'ABC1D23' }] as T;
+    } };
+    const api = createVerimultaApi(client as never);
+    const vehicle = await api.ensureVehicle({ placa: 'abc1d23', modelo: 'Meu veículo' });
+    expect(vehicle).toEqual({ id: 9, placa: 'ABC1D23' });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].path).toBe('/v1/veiculos');
+  });
+
+  it('cria a placa somente depois de consultar a sessão autenticada', async () => {
+    const calls: Array<{ path: string; options: Record<string, unknown> }> = [];
+    const client = { request: async <T>(path: string, options: Record<string, unknown> = {}) => {
+      calls.push({ path, options });
+      return (path === '/v1/veiculos' && !options.method ? [] : { id: 10, placa: 'XYZ9A88', modelo: 'Meu veículo' }) as T;
+    } };
+    const api = createVerimultaApi(client as never);
+    await api.ensureVehicle({ placa: 'xyz9a88', modelo: 'Meu veículo' });
+    expect(calls.map((call) => call.path)).toEqual(['/v1/veiculos', '/v1/veiculos']);
+    expect(calls[1].options.json).toEqual({ placa: 'XYZ9A88', modelo: 'Meu veículo' });
+  });
+
+  it('mantém o identificador do recurso separado do identificador da multa', async () => {
+    const client = fakeClient(); const api = createVerimultaApi(client as never);
+    await api.createDefense(41);
+    await api.downloadDefensePdf(17);
+    expect(client.calls[0].options.json).toEqual({ multa_id: 41 });
+    expect(client.calls[1].path).toBe('/v1/recursos/17/pdf');
+  });
 });

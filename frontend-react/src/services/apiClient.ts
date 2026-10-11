@@ -5,6 +5,7 @@ export interface ApiClientOptions {
   storage: CredentialStorage;
   fetcher?: typeof fetch;
   timeoutMs?: number;
+  onSessionInvalidated?: () => void;
 }
 
 export interface RequestOptions extends Omit<RequestInit, 'body'> {
@@ -18,12 +19,14 @@ export class ApiClient {
   private readonly storage: CredentialStorage;
   private readonly fetcher: typeof fetch;
   private readonly timeoutMs: number;
+  private readonly onSessionInvalidated?: () => void;
 
   constructor(options: ApiClientOptions) {
     this.baseUrl = (options.baseUrl ?? '').replace(/\/$/, '');
     this.storage = options.storage;
     this.fetcher = options.fetcher ?? fetch;
     this.timeoutMs = options.timeoutMs ?? 15_000;
+    this.onSessionInvalidated = options.onSessionInvalidated;
   }
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -46,7 +49,10 @@ export class ApiClient {
         headers,
         signal: controller.signal
       });
-      if (response.status === 401) this.storage.clear();
+      if (response.status === 401 && session?.token && this.storage.read()?.token === session.token) {
+        this.storage.clear();
+        this.onSessionInvalidated?.();
+      }
       if (!response.ok) throw new ApiError(response.status as HttpStatus, await this.readJson(response));
       if (options.binary) return (await response.blob()) as T;
       return (await response.json()) as T;

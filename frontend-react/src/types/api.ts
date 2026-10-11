@@ -88,6 +88,11 @@ export interface Recurso {
   criado_em: string;
 }
 
+export interface VeiculoPendente {
+  placa: string;
+  modelo?: string;
+}
+
 export interface DefesaCriada {
   recurso_id: number;
   tipo: string;

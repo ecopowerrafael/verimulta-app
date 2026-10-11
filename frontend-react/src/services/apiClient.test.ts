@@ -19,4 +19,22 @@ describe('ApiClient', () => {
     await expect(client.request('/v1/test')).rejects.toBeInstanceOf(ApiError);
     if (status === 401) expect(saved.read()).toBeNull();
   });
+
+  it('notifica a aplicação apenas quando o 401 pertence à sessão atual', async () => {
+    const saved = storage(); let invalidated = 0;
+    const client = new ApiClient({ storage: saved, onSessionInvalidated: () => { invalidated += 1; }, fetcher: async () => {
+      saved.write({ token: 'new-session' });
+      return new Response(JSON.stringify({ erro: 'sessão antiga' }), { status: 401 });
+    } });
+    await expect(client.request('/v1/late')).rejects.toBeInstanceOf(ApiError);
+    expect(saved.read()?.token).toBe('new-session');
+    expect(invalidated).toBe(0);
+  });
+
+  it('não trata 401 do login como expiração de sessão existente', async () => {
+    const saved: CredentialStorage = { read: () => null, write: () => undefined, clear: () => undefined }; let invalidated = 0;
+    const client = new ApiClient({ storage: saved, onSessionInvalidated: () => { invalidated += 1; }, fetcher: async () => new Response('{}', { status: 401 }) });
+    await expect(client.request('/v1/auth/login', { method: 'POST' })).rejects.toBeInstanceOf(ApiError);
+    expect(invalidated).toBe(0);
+  });
 });

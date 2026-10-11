@@ -98,3 +98,17 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Plano de rollback para o HTML legado.
 
 **Última atualização:** 11/10/2026 — recursos/defesa, planos/checkout, cancelamento e perfil/LGPD foram migrados para React; backend integrado permanece pendente por falta de toolchain nativa no computador de desenvolvimento. Frontend validado com typecheck, 12 contratos, build e navegação local; nenhuma funcionalidade integrada foi declarada aprovada.
+
+## VM-03 — repetir na VPS após as correções React
+
+- [ ] Cadastro: confirmar que a sessão é gravada antes de `POST /v1/veiculos` e que o JWT chega ao backend.
+- [ ] Cadastro: simular falha parcial da criação do veículo e confirmar que a conta permanece utilizável, sem duplicar placa em nova tentativa.
+- [ ] Sessão: expirar um JWT e confirmar HTTP 401, limpeza do estado React e retorno ao login.
+- [ ] Sessão: confirmar que uma resposta atrasada de token antigo não encerra uma sessão nova.
+- [ ] Defesa: criar uma defesa com `multa_id` conhecido e abrir PDF existente usando `recurso_id` diferente.
+- [ ] Defesa: confirmar que a tela de recursos não cria uma segunda defesa ao abrir recurso existente.
+- [ ] Assinatura: validar o contrato atual de cancelamento e registrar se a mudança é imediata ou ao fim da vigência.
+- [ ] Assinatura: confirmar que o frontend não libera nem bloqueia benefícios somente por estado local.
+- [ ] Sessão restaurada: validar identidade e plano contra endpoint real quando o contrato existir; atualmente a proposta de `GET /v1/eu` continua pendente.
+
+**Atualização VM-03:** correções locais implementadas e validadas com typecheck, 17 testes unitários/contratuais e build. Nenhum item acima foi aprovado para integração sem execução contra o backend real.
