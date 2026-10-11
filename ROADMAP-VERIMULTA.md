@@ -112,6 +112,7 @@ Princípios de evolução:
 - Recursos existentes usam `GET /v1/recursos/:id/pdf`; não criam defesa duplicada.
 - Commit funcional: `beaa5e53e63b8f6351ddaed2f94a819c819b7ead`.
 - Commit documental: `f79347aa3a76c2706aed641b5ba0ed8e6a9e7673`.
+- Ajustes VM-03.06: `376bae8e0fd3df180a944ff6abff430ab9613baa`.
 - `npm run typecheck`: passou.
 - `npm test`: 17 testes passaram.
 - `npm run build`: passou.
@@ -392,6 +393,7 @@ Princípios de evolução:
 
 - Implementação: `beaa5e53e63b8f6351ddaed2f94a819c819b7ead`.
 - Registro documental e push: `f79347aa3a76c2706aed641b5ba0ed8e6a9e7673`.
+- Ajustes finais de persistência e isolamento: `376bae8e0fd3df180a944ff6abff430ab9613baa`.
 - Testes locais anteriores: typecheck passou, 17 testes passaram e build Vite passou.
 - Nenhum teste de integração real com Express foi declarado aprovado.
 
