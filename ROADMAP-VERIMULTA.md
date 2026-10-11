@@ -1,269 +1,405 @@
-# VERIMULTA — VM-03: Correções críticas da base React
+# VERIMULTA — Roadmap geral de desenvolvimento
 
-Atue como engenheiro de software sênior responsável pela evolução do VeriMulta.
+## Visão do produto
 
-Estamos desenvolvendo uma aplicação SaaS com React + TypeScript + Vite, preparada para distribuição futura por Capacitor no Android e iOS.
+O VeriMulta é uma aplicação SaaS para consulta, auditoria e preparação de defesas administrativas relacionadas a multas de trânsito. O sistema mantém um backend Node.js/Express com SQLite na base atual, uma interface HTML legada e uma nova base React + TypeScript + Vite preparada para futura distribuição via Capacitor.
 
-O objetivo é preservar integralmente a identidade visual e as funcionalidades do HTML original, mantendo o backend Node.js/Express.
+Princípios de evolução:
 
-## Repositórios
+- preservar o backend, regras de auditoria, jurimetria, planos e integração financeira existentes;
+- preservar o HTML legado até a substituição ser comprovada por homologação;
+- manter o backend como autoridade para autenticação, autorização, tenant, assinatura e benefícios;
+- não declarar integração, segurança ou equivalência visual sem evidência correspondente;
+- publicar desenvolvimento somente em `https://github.com/ecopowerrafael/verimulta-app`;
+- não modificar `https://github.com/agendaprimecorp-lgtm/verimulta`.
 
-**Desenvolvimento:**
-`https://github.com/ecopowerrafael/verimulta-app`
+## Estado global
 
-**Repositório original do cliente (não modificar):**
-`https://github.com/agendaprimecorp-lgtm/verimulta`
+**Data da revisão:** 11/10/2026
 
-**Branch de trabalho:**
-`migration-react-typescript-capacitor`
+**Branch de desenvolvimento:** `migration-react-typescript-capacitor`
 
-## 1. Incorporar o roadmap
+**Commit de referência:** `f79347aa3a76c2706aed641b5ba0ed8e6a9e7673`
 
-Estou enviando o arquivo `ROADMAP-VERIMULTA.md`.
+**Estado atual:** Etapas 01 e 02 concluídas; Etapa 03 em andamento, com validação local leve aprovada e integração real com Express/VPS pendente. Etapas 04–11 ainda não iniciadas.
 
-Antes de qualquer implementação:
+---
 
-1. Ler integralmente o roadmap fornecido.
-2. Colocar o arquivo na raiz do repositório local, preservando seu conteúdo e organização.
-3. Conferir o Git e a branch atual.
-4. Conferir o commit de referência `6c2062a`.
-5. Verificar se existem alterações locais não publicadas.
-6. Não substituir arquivos existentes sem conferir possíveis diferenças.
-7. Usar o roadmap como documento central de acompanhamento do projeto.
+## Etapa 01 — Auditoria e planejamento
 
-O roadmap deverá ser atualizado ao finalizar cada tarefa, registrando o estado real, evidências, testes e commits.
+**Status:** concluída.
 
-Não marcar uma atividade como aprovada se ela foi apenas implementada, mas não testada contra o backend real.
+### Checklist
 
-## 2. VM-03.01 — Corrigir autenticação durante o cadastro
+- [x] Mapear HTML legado, frontend isolado e backend Node.js/Express.
+- [x] Identificar endpoints, autenticação JWT, SQLite, planos e integração financeira.
+- [x] Registrar riscos de tenant, credenciais, webhooks, banco e toolchain nativa.
+- [x] Definir migração incremental, sem substituir o legado prematuramente.
 
-Arquivo principal:
-`frontend-react/src/app/App.tsx`
+### Evidências
 
-Problema identificado:
+- `6_CODIGO_FONTE/sistema/servidor.js` e módulos relacionados foram usados como contrato do backend.
+- `PLANO-MIGRACAO-REACT-CAPACITOR.md` registra o diagnóstico inicial e a estratégia incremental.
+- `PENDENCIAS-HOMOLOGACAO-VPS.md` mantém os critérios operacionais ainda não validados.
 
-O cadastro permite informar uma placa. Atualmente, o frontend tenta criar o veículo antes de estabelecer a sessão do usuário, fazendo a chamada potencialmente sem o JWT necessário.
+### Pendências
 
-Investigar o fluxo completo e corrigir.
+- Revalidar contratos em cada etapa quando houver mudança de backend ou dados reais.
 
-Requisitos:
+### Critérios de aceite
 
-- Cadastro retorna usuário e token.
-- A credencial precisa estar disponível antes de realizar operações autenticadas.
-- O cadastro de veículo deve utilizar o token correto.
-- Se o cadastro do usuário funcionar e o veículo falhar, não tratar o cadastro inteiro como inexistente.
-- Apresentar mensagem coerente e permitir completar o veículo posteriormente.
-- Não criar contas ou veículos duplicados em tentativas de recuperação.
-- Não expor credenciais nos logs.
+- Arquitetura, riscos, limites de escopo e ordem de migração documentados.
+- Nenhuma alteração de produto baseada em contexto inventado.
 
-Adicionar testes para sucesso e falha parcial.
+---
 
-## 3. VM-03.02 — Corrigir expiração da sessão
+## Etapa 02 — Fundação React e GitHub
 
-Arquivos principais:
-`apiClient.ts`, `storage.ts` e `App.tsx`.
+**Status:** concluída para a base inicial.
 
-Problema:
+### Checklist
 
-Ao receber HTTP 401, o cliente HTTP limpa as credenciais, mas a aplicação React pode continuar apresentando uma tela autenticada.
+- [x] Criar frontend React + TypeScript + Vite isolado.
+- [x] Preservar HTML legado e backend sem substituição prematura.
+- [x] Centralizar cliente HTTP, armazenamento de sessão, tipos e integrações web.
+- [x] Criar testes unitários/contratuais iniciais.
+- [x] Configurar exclusões de segredos, bancos, dependências e artefatos.
+- [x] Publicar a branch de migração no repositório próprio.
 
-Implementar sincronização adequada entre autenticação e estado visual.
+### Evidências
 
-Requisitos:
+- Commit inicial da base: `6c2062a99d149e1133e833bcbf109081f8721ffc`.
+- Commit da primeira correção crítica: `beaa5e53e63b8f6351ddaed2f94a819c819b7ead`.
+- Publicação confirmada no remote `meu-github`.
+- `origin` continua apontando para o repositório do cliente.
 
-- HTTP 401 de sessão autenticada deve invalidar a sessão correspondente.
-- Limpar dados pessoais mantidos no estado da aplicação.
-- Redirecionar o usuário ao login.
-- Apresentar mensagem apropriada.
-- Evitar loops de redirecionamento.
-- Diferenciar credenciais inválidas no login de expiração de sessão existente.
-- Evitar que uma resposta atrasada de sessão antiga encerre uma sessão nova.
+### Pendências
 
-Não introduzir bibliotecas pesadas de estado global.
+- A base ainda precisa ser homologada contra o Express real antes de substituir qualquer jornada legada.
 
-Adicionar testes específicos.
+### Critérios de aceite
 
-## 4. VM-03.03 — Corrigir identificação da multa na geração de defesa
+- Projeto React compila com TypeScript strict.
+- Histórico Git e branch de migração preservados.
+- Nenhum segredo, banco, backup, `node_modules` ou `dist` versionado.
 
-Investigar a integração entre:
+---
 
-- Lista de recursos.
-- Geração de defesa.
-- Identificador da multa.
-- Identificador do recurso.
-- Endpoint `POST /v1/recursos`.
+## Etapa 03 — Correções da base e validação leve
 
-O código atual passa um identificador para `createDefense()` a partir da lista de recursos.
+**Status:** em andamento; não homologada integralmente.
 
-Confirmar pelo contrato real do backend se a operação espera `multa_id` ou `recurso_id`.
+### Checklist
 
-Não presumir que os identificadores são intercambiáveis.
+- [x] Corrigir autenticação antes do cadastro de veículo.
+- [x] Tratar falha parcial sem perder a conta criada.
+- [x] Persistir recuperação de veículo pendente por usuário, sem guardar credenciais adicionais.
+- [x] Evitar duplicidade de placa em recuperação.
+- [x] Sincronizar expiração de sessão HTTP 401 com o estado visual.
+- [x] Impedir que respostas de sessões antigas alterem a sessão atual.
+- [x] Separar `multa_id` de `recurso_id` na criação e abertura de defesa.
+- [x] Não forçar `plano: gratis` após cancelamento.
+- [x] Documentar a ausência de endpoint real de identidade da sessão.
+- [x] Executar typecheck, testes leves e build local.
+- [ ] Executar integração HTTP contra Express e banco descartável na VPS.
+- [ ] Homologar cancelamento, vigência e identidade autenticada no backend real.
 
-Corrigir a navegação e a associação quando necessário.
+### Evidências
 
-Se um recurso já existe, verificar se a ação correta é abrir sua defesa existente, em vez de criar outra.
+- `ApiClient` compara o token capturado com o token atual antes de invalidar a sessão.
+- `pendingVehicleStorage` usa chave vinculada ao `usuario.id` e guarda somente placa/modelo pendentes.
+- `ensureVehicle()` consulta veículos antes de criar.
+- Recursos existentes usam `GET /v1/recursos/:id/pdf`; não criam defesa duplicada.
+- Commit funcional: `beaa5e53e63b8f6351ddaed2f94a819c819b7ead`.
+- Commit documental: `f79347aa3a76c2706aed641b5ba0ed8e6a9e7673`.
+- `npm run typecheck`: passou.
+- `npm test`: 17 testes passaram.
+- `npm run build`: passou.
 
-Adicionar testes que utilizem IDs diferentes para multa e recurso, identificando qualquer associação incorreta.
+### Pendências e riscos
 
-Não modificar o backend sem necessidade comprovada.
+- O backend atual não oferece `GET /v1/eu` ou equivalente para confirmar identidade e plano vigentes.
+- O cancelamento retorna apenas `ok` e `mensagem`; não distingue solicitação, vigência e término.
+- O Express real não foi executado neste computador por dependência nativa do SQLite.
+- A validação visual lado a lado e as jornadas reais permanecem pendentes.
 
-## 5. VM-03.04 — Corrigir representação do cancelamento de assinatura
+### Critérios de aceite
 
-Investigar o contrato real do endpoint de cancelamento.
+- Correções locais cobertas por testes e sem regressão de typecheck/build.
+- Nenhum item de integração marcado como aprovado apenas por teste isolado.
+- Etapa permanece aberta até a homologação na VPS.
 
-Problema:
+---
 
-O frontend atualmente define o plano do usuário como `gratis` após receber uma resposta de cancelamento.
+## Etapa 04 — Conclusão do frontend React
 
-Isso pode divergir do estado real da assinatura, especialmente quando o cancelamento ocorrer ao final do período pago.
+**Status:** planejada; não iniciada.
 
-Requisitos:
+### Checklist
 
-- Não inventar o estado da assinatura no frontend.
-- Utilizar a resposta efetiva do servidor.
-- Se o contrato atual não informar suficientemente o estado, registrar a necessidade de ajuste no backend.
-- Diferenciar solicitação de cancelamento, cancelamento confirmado e término da vigência quando esses estados forem suportados.
-- Não liberar ou bloquear benefícios com base apenas em alterações locais.
-- Impedir múltiplos envios acidentais.
+- [ ] Inventariar todas as telas e jornadas restantes do HTML legado.
+- [ ] Migrar telas em fatias verticais, preservando tokens, layouts e comportamento.
+- [ ] Completar estados de carregamento, erro, vazio, paywall e permissões.
+- [ ] Cobrir acessibilidade básica, teclado, foco e mensagens de erro.
+- [ ] Validar viewports 320/360/390/430 px e desktop.
+- [ ] Comparar visualmente React e legado com evidência reproduzível.
 
-Adicionar testes usando respostas compatíveis com o contrato existente.
+### Evidências
 
-## 6. VM-03.05 — Revisar restauração da sessão
+- A base atual cobre a primeira jornada de autenticação, multa, diagnóstico, recursos, planos e perfil em nível isolado.
 
-O React atualmente restaura informações locais do usuário.
+### Pendências
 
-Revisar o comportamento sem alterar o backend nesta etapa.
+- Dependente da conclusão e homologação da Etapa 03.
 
-Verificar se existe endpoint capaz de retornar a identidade autenticada e o plano vigente.
+### Critérios de aceite
 
-Se não existir, documentar uma proposta para `GET /v1/eu` ou endpoint equivalente, com contrato mínimo e critérios de segurança.
+- Todas as jornadas priorizadas possuem equivalente React testado.
+- Nenhuma divergência visual ou funcional crítica sem decisão registrada.
+- HTML legado continua disponível para rollback.
 
-Não criar endpoint fictício nem declarar a sessão validada pelo servidor sem uma requisição real.
+---
 
-## 7. Testes leves
+## Etapa 05 — Backend e banco em nuvem
 
-Este computador possui pouca memória RAM.
+**Status:** planejada; não iniciada.
 
-Portanto:
+### Checklist
 
-- Não utilizar Docker.
-- Não instalar Visual Studio ou compiladores C++.
-- Não executar backend SQLite local.
-- Não instalar emulador Android.
-- Não executar testes de carga.
-- Não instalar Capacitor nativo ainda.
+- [ ] Definir ambiente de backend e banco gerenciado/adequado.
+- [ ] Planejar migrações, índices, constraints, backup e rollback.
+- [ ] Validar isolamento de usuário/tenant em todas as consultas.
+- [ ] Configurar secrets fora do repositório.
+- [ ] Definir observabilidade, health check, timeout e retenção de logs.
+- [ ] Executar migração progressiva sem perda de dados.
 
-Executar sequencialmente, quando compatível com a máquina:
+### Evidências
 
-- `npm run typecheck`
-- `npm test`
-- `npm run build`
+- O backend atual usa SQLite e módulos Node.js/Express no diretório `6_CODIGO_FONTE/sistema`.
 
-Executar somente testes isolados e de contrato nesta etapa.
+### Pendências
 
-A integração real será homologada posteriormente na VPS.
+- Não escolher provedor ou alterar banco sem requisitos de produção, volume e rollback definidos.
 
-## 8. Restrições arquiteturais
+### Critérios de aceite
 
-- Preservar o HTML legado.
-- Preservar a identidade visual.
-- Não alterar regras de auditoria ou jurimetria.
-- Não modificar o banco de dados.
-- Não modificar planos ou preços.
-- Não alterar a integração financeira de produção.
-- Não adicionar bibliotecas desnecessárias.
-- Manter TypeScript strict.
-- Evitar componentes monolíticos e regras duplicadas.
-- Não criar mocks no fluxo de produção.
+- Dados existentes preservados e restauráveis.
+- Segurança, tenant isolation, backups e operação comprovados em ambiente de homologação.
 
-## 9. Atualização do roadmap
+---
 
-Após concluir as correções:
+## Etapa 06 — Assinaturas comerciais
 
-1. Atualizar os itens VM-03.01 a VM-03.05.
-2. Distinguir implementado, testado localmente e pendente de integração.
-3. Registrar os testes executados.
-4. Registrar riscos ou problemas remanescentes.
-5. Manter a Etapa 03 aberta enquanto houver critérios de homologação pendentes.
-6. Atualizar também `PENDENCIAS-HOMOLOGACAO-VPS.md` com os testes que precisarão ser repetidos na VPS.
+**Status:** planejada; não iniciada.
 
-## 10. GitHub
+### Checklist
 
-Após concluir as implementações e verificações:
+- [ ] Definir estados de assinatura e vigência no backend.
+- [ ] Confirmar planos, limites e preços em fonte única.
+- [ ] Validar checkout, retorno e ativação somente por webhook confiável.
+- [ ] Implementar idempotência, replay protection e processamento fora de ordem.
+- [ ] Definir cancelamento imediato versus fim de período.
+- [ ] Exibir no frontend somente estado efetivo do servidor.
 
-1. Revisar `git diff`.
-2. Verificar arquivos sensíveis.
-3. Criar um commit descritivo na branch atual.
-4. Fazer push exclusivamente para `meu-github`.
-5. Não modificar o repositório original do cliente.
-6. Não realizar deploy.
-7. Não utilizar `--force`.
+### Evidências
 
-Usar o Git Credential Manager existente para autenticação, já que o push HTTPS funcionou anteriormente.
+- O backend possui `/v1/planos`, `/v1/checkout`, webhooks e cancelamento.
 
-Não exigir novo login apenas porque `gh auth status` apresentar token inválido.
+### Pendências
 
-## 11. Relatório final
+- Contrato atual de cancelamento não informa vigência nem estado detalhado.
 
-Apresentar:
+### Critérios de aceite
 
-- Roadmap incorporado.
-- Tarefas corrigidas.
-- Arquivos alterados.
-- Testes executados e resultados.
-- Pontos ainda não homologados.
-- Commit SHA.
-- Confirmação do push para `ecopowerrafael/verimulta-app`.
-- Próxima tarefa recomendada.
+- Nenhum benefício é liberado por estado local.
+- Webhooks duplicados, atrasados, inválidos e fora de ordem são seguros.
+- Financeiro e auditoria permanecem rastreáveis.
 
-Não iniciar automaticamente a Etapa 04.
+---
 
-O objetivo é concluir correções pequenas, confiáveis e revisáveis antes de prosseguir.
+## Etapa 07 — Homologação integrada na VPS
 
-## Status VM-03 — 11/10/2026
+**Status:** planejada; bloqueada até ambiente adequado.
+
+### Checklist
+
+- [ ] Instalar dependências backend em Node compatível.
+- [ ] Usar banco descartável e identificado.
+- [ ] Executar testes backend e API.
+- [ ] Subir Express e frontend com configuração de homologação.
+- [ ] Validar autenticação, cadastro, 401, veículos, multas, OCR, diagnóstico e defesa.
+- [ ] Validar assinaturas, webhooks, LGPD, isolamento e concorrência.
+- [ ] Registrar logs, evidências e rollback.
+
+### Evidências
+
+- `PENDENCIAS-HOMOLOGACAO-VPS.md` contém o checklist operacional detalhado.
+
+### Pendências
+
+- O ambiente local não possui toolchain nativa compatível com `better-sqlite3`.
+
+### Critérios de aceite
+
+- Jornadas críticas executadas contra backend real, sem banco de produção.
+- Todos os riscos críticos têm evidência ou plano de correção aprovado.
+
+---
+
+## Etapa 08 — Capacitor Android/iOS
+
+**Status:** planejada; não iniciada.
+
+### Checklist
+
+- [ ] Confirmar que o frontend web está homologado.
+- [ ] Definir armazenamento seguro de sessão nativo.
+- [ ] Integrar câmera, arquivos, navegação externa e downloads.
+- [ ] Tratar ciclo de vida, suspensão, retomada, deep links e botão voltar.
+- [ ] Configurar builds reproduzíveis e assinaturas fora do repositório.
+- [ ] Testar em dispositivos reais.
+
+### Evidências
+
+- A camada web já separa transferência de arquivos e navegação externa.
+
+### Pendências
+
+- Não instalar Capacitor nativo antes das Etapas 03, 04 e 07.
+
+### Critérios de aceite
+
+- Paridade funcional web/mobile comprovada nos fluxos prioritários.
+- Credenciais armazenadas com mecanismo seguro da plataforma.
+
+---
+
+## Etapa 09 — Publicação web
+
+**Status:** planejada; não iniciada.
+
+### Checklist
+
+- [ ] Definir pipeline de build e artefatos.
+- [ ] Configurar domínio, HTTPS, CORS e variáveis de ambiente.
+- [ ] Publicar frontend sem segredos no bundle.
+- [ ] Configurar rollback para HTML legado.
+- [ ] Validar observabilidade, cache, headers e health checks.
+
+### Evidências
+
+- Build Vite local já é executável, mas não representa publicação de produção.
+
+### Pendências
+
+- Deploy não autorizado nesta etapa e ainda sem critérios de produção aprovados.
+
+### Critérios de aceite
+
+- Publicação reproduzível, reversível e monitorada.
+- Backend e frontend usam contratos/versionamento compatíveis.
+
+---
+
+## Etapa 10 — Publicação Google Play e App Store
+
+**Status:** planejada; não iniciada.
+
+### Checklist
+
+- [ ] Definir contas, certificados, identificadores e políticas de privacidade.
+- [ ] Gerar builds assinados em ambiente controlado.
+- [ ] Validar permissões, câmera, arquivos e links externos.
+- [ ] Preparar metadados, screenshots e suporte.
+- [ ] Executar distribuição interna antes da publicação pública.
+
+### Evidências
+
+- Nenhum pacote nativo ou emulador foi criado, conforme restrições atuais.
+
+### Pendências
+
+- Depende da Etapa 08 e da homologação integrada.
+
+### Critérios de aceite
+
+- Builds assinados e rastreáveis.
+- Testes internos aprovados sem regressões críticas e com rollback definido.
+
+---
+
+## Etapa 11 — Estabilização e entrega
+
+**Status:** planejada; não iniciada.
+
+### Checklist
+
+- [ ] Monitorar erros, desempenho, pagamentos, webhooks e suporte.
+- [ ] Corrigir regressões sem reescrever histórico ou quebrar contratos.
+- [ ] Consolidar documentação operacional e técnica.
+- [ ] Treinar operação e definir responsáveis.
+- [ ] Encerrar migração somente após período de estabilidade comprovado.
+
+### Evidências
+
+- Ainda não há publicação de produção nem período de estabilidade.
+
+### Pendências
+
+- Todas as etapas anteriores e seus critérios de aceite.
+
+### Critérios de aceite
+
+- Sistema monitorado, rollback testado, documentação entregue e responsabilidades transferidas.
+- HTML legado aposentado somente após evidência de equivalência e estabilidade.
+
+---
+
+## Histórico preservado — VM-03.01 a VM-03.05
 
 ### VM-03.01 — Autenticação durante o cadastro
 
-- **Implementado:** a sessão recebida no cadastro é persistida antes de qualquer chamada autenticada.
-- **Implementado:** a placa é consultada antes da criação para evitar duplicidade em recuperação; falha no veículo mantém a conta ativa e exibe uma ação de conclusão na tela inicial.
-- **Testado localmente:** cobertura contratual para veículo já existente, criação após consulta e recuperação sem duplicação.
-- **Pendente de integração:** cadastro, JWT e falha parcial ainda precisam ser executados contra o Express real na VPS.
+- Sessão persistida antes de chamadas autenticadas.
+- `ensureVehicle()` consulta veículos antes de criar.
+- Falha parcial mantém a conta ativa e oferece conclusão posterior.
+- Integração com Express ainda pendente.
 
 ### VM-03.02 — Expiração da sessão
 
-- **Implementado:** `ApiClient` invalida a sessão somente quando o HTTP 401 pertence ao token ainda armazenado.
-- **Implementado:** a aplicação limpa o modelo pessoal, retorna ao login e informa a expiração; 401 de login não é tratado como expiração.
-- **Implementado:** resposta atrasada de sessão antiga não limpa uma sessão nova.
-- **Testado localmente:** cenários de 401 autenticado, 401 de login e resposta atrasada; typecheck, testes e build verdes.
-- **Pendente de integração:** validação ponta a ponta com token expirado no backend real.
+- HTTP 401 da sessão atual limpa credencial e estado visual.
+- 401 do login não é tratado como expiração.
+- Resposta atrasada de token antigo não encerra sessão nova.
 
 ### VM-03.03 — Identificação da multa na defesa
 
-- **Confirmado pelo backend:** `POST /v1/recursos` recebe `multa_id`; `GET /v1/recursos/:id/pdf` recebe o `id` do recurso.
-- **Implementado:** diagnóstico cria defesa usando o ID da multa; a lista de recursos não cria outra defesa e abre o PDF existente usando o ID do recurso.
-- **Testado localmente:** IDs distintos de multa e recurso cobertos no contrato do serviço.
-- **Pendente de integração:** geração e abertura do PDF com dados reais e plano elegível.
+- `POST /v1/recursos` recebe `multa_id`.
+- PDF existente usa `recurso_id` em `GET /v1/recursos/:id/pdf`.
+- A lista não cria defesa duplicada.
 
 ### VM-03.04 — Cancelamento de assinatura
 
-- **Implementado:** o frontend não força `plano: gratis` após cancelar; mantém o estado informado pelo servidor.
-- **Implementado:** a ação fica indisponível após a solicitação bem-sucedida para evitar múltiplos envios na mesma sessão.
-- **Limitação confirmada:** o backend retorna somente `ok` e `mensagem`, apesar de alterar o plano diretamente; não informa estado de solicitação, vigência ou plano efetivo.
-- **Pendente de backend/homologação:** definir contrato de estado de assinatura e validar cancelamento ao fim da vigência.
+- Frontend não força `plano: gratis`.
+- A ação é bloqueada após sucesso na sessão atual.
+- Contrato backend ainda não distingue vigência, solicitação e término.
 
 ### VM-03.05 — Restauração da sessão
 
-- **Revisado:** a restauração local continua sendo usada apenas para iniciar as chamadas autenticadas; a tela só segue para home depois de carregar veículos e multas.
-- **Limitação confirmada:** não existe endpoint de identidade autenticada (`GET /v1/eu` ou equivalente); `/v1/eu/dados` é exportação e não deve ser usado para esse fim.
-- **Proposta registrada:** criar posteriormente endpoint de identidade mínima, autenticado por JWT, retornando `id`, `nome`, `email` e plano vigente, sem dados sensíveis desnecessários.
-- **Pendente:** alteração contratual do backend e homologação real; nenhuma validação fictícia foi adicionada.
+- Dados locais só iniciam chamadas autenticadas; não são considerados prova suficiente de identidade do servidor.
+- Falta endpoint de identidade mínima, como `GET /v1/eu`.
+- Nenhum endpoint fictício foi criado.
 
-### Evidências e riscos remanescentes
+### Evidências da VM-03
 
-- `npm run typecheck`: passou.
-- `npm test`: 2 arquivos, 17 testes passaram.
-- `npm run build`: passou; bundle Vite gerado sem erros.
-- Backend real, banco SQLite, Docker, Capacitor e testes nativos não foram executados.
-- A Etapa 03 permanece aberta até a homologação HTTP na VPS e a definição do contrato de assinatura/identidade.
-- Commit da implementação: `beaa5e53e63b8f6351ddaed2f94a819c819b7ead`.
-- Push confirmado em `meu-github/migration-react-typescript-capacitor`.
+- Implementação: `beaa5e53e63b8f6351ddaed2f94a819c819b7ead`.
+- Registro documental e push: `f79347aa3a76c2706aed641b5ba0ed8e6a9e7673`.
+- Testes locais anteriores: typecheck passou, 17 testes passaram e build Vite passou.
+- Nenhum teste de integração real com Express foi declarado aprovado.
+
+## Próxima sequência recomendada
+
+Não iniciar a Etapa 04 automaticamente. Quando a Etapa 03 for homologada na VPS, a primeira sequência recomendada da Etapa 04 é:
+
+1. concluir estados de erro, carregamento, vazio e paywall da jornada já migrada;
+2. migrar a tela de recursos/perfil com comparação visual formal e acessibilidade;
+3. migrar as telas restantes do HTML legado por fatias verticais, sempre preservando tokens e contratos;
+4. só então preparar Capacitor.

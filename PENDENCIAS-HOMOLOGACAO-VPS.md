@@ -78,7 +78,7 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 ## Frontend e mobile
 
 - [x] Typecheck React — execução local concluída sem erros.
-- [x] Testes unitários/contratos — 12 testes passaram; integração HTTP continua pendente.
+- [x] Testes unitários/contratos — 19 testes passaram; integração HTTP continua pendente.
 - [x] Build Vite — build local concluído sem erros.
 - [ ] Jornadas reais em 320/360/390/430 px e desktop.
 - [ ] Comparação visual lado a lado com o HTML legado.
@@ -97,7 +97,7 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Health check e observabilidade.
 - [ ] Plano de rollback para o HTML legado.
 
-**Última atualização:** 11/10/2026 — recursos/defesa, planos/checkout, cancelamento e perfil/LGPD foram migrados para React; backend integrado permanece pendente por falta de toolchain nativa no computador de desenvolvimento. Frontend validado com typecheck, 12 contratos, build e navegação local; nenhuma funcionalidade integrada foi declarada aprovada.
+**Última atualização:** 11/10/2026 — VM-03 revisou cadastro parcial, expiração de sessão, isolamento de respostas antigas, recursos/defesa, cancelamento e restauração local. Frontend validado com typecheck, 19 testes unitários/contratuais e build; backend integrado permanece pendente por falta de toolchain nativa no computador de desenvolvimento. Nenhuma funcionalidade integrada foi declarada aprovada.
 
 ## VM-03 — repetir na VPS após as correções React
 
