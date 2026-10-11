@@ -2,6 +2,8 @@
 
 Este checklist deve ser executado somente em ambiente de staging isolado. Itens não executados nesta VM permanecem pendentes.
 
+**Estado VM-05.02:** artefatos locais preparados; nenhuma VPS identificada, autorizada ou provisionada.
+
 ## Infraestrutura
 
 - [ ] DNS e HTTPS válidos; HTTP redireciona para HTTPS.
@@ -9,6 +11,8 @@ Este checklist deve ser executado somente em ambiente de staging isolado. Itens 
 - [ ] `/v1/saude` monitorado; logs com rotação e sem secrets/PII desnecessários.
 - [ ] Volume persistente e backup criptografado restaurado em ambiente separado.
 - [ ] Staging e produção separados por domínio, banco, secrets, webhook e gateway.
+- [ ] `NODE_ENV=staging` revisado: ativação demo permanece possível e não pode receber dados, webhooks ou credenciais de produção.
+- [ ] Usuário limitado, caminhos `/opt`, `/var/lib`, backups e arquivo de ambiente criados com permissões revisadas.
 
 ## API e segurança
 
@@ -27,6 +31,7 @@ Este checklist deve ser executado somente em ambiente de staging isolado. Itens 
 - [ ] Fontes oficiais continuam explicitamente indisponíveis até credenciamento real.
 - [ ] SMTP de teste, Google Vision e gateway de teste têm timeout, credenciais isoladas e logs seguros.
 - [ ] Tarefas de prazo/varredura executadas manualmente e em agendamento controlado; sem concorrência indevida.
+- [ ] SMTP de staging sem envio externo, fontes oficiais desativadas e `DEMO_NOVA_MULTA=false`.
 
 ## Frontend/PWA
 
@@ -40,3 +45,11 @@ Este checklist deve ser executado somente em ambiente de staging isolado. Itens 
 - [ ] Anexar logs, respostas HTTP, screenshots e SHA do artefato homologado.
 - [ ] Registrar falhas e rollback antes de declarar aprovação.
 - [ ] Não declarar integração oficial, cobrança real ou equivalência visual sem evidência correspondente.
+
+## Artefatos para provisionamento posterior
+
+- [ ] Revisar `infra/vps/systemd/verimulta-staging.service.example` e validar com `systemd-analyze verify` no Linux.
+- [ ] Substituir placeholders e validar `infra/vps/nginx/verimulta-staging.conf.example` com `nginx -t` no host autorizado.
+- [ ] Executar `infra/vps/scripts/verify-staging.sh` em modo leitura.
+- [ ] Executar `install-staging.sh` somente com confirmação explícita e caminhos ainda inexistentes.
+- [ ] Testar `backup-sqlite.sh` e `restore-sqlite.sh` em banco descartável, sem dados pessoais.

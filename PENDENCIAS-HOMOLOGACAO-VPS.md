@@ -218,3 +218,16 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Não iniciar SQLite → PostgreSQL antes de inventário, backup restaurável, schema versionado e rollback ensaiado.
 
 **Atualização VM-05.01:** diagnóstico, plano VPS, plano SQLite/PostgreSQL, checklist e `.env.example` foram preparados localmente; nenhum deploy, acesso à VPS ou migração de banco foi executado. O Service Worker foi corrigido para não devolver `app.html` a recursos não navegacionais; a validação em navegador real permanece pendente.
+
+## VM-05.02 — preparação de staging Linux isolado
+
+- [ ] Identificar e autorizar explicitamente uma VPS dedicada ao VeriMulta; nenhum host ou domínio de outro projeto pode ser reutilizado por suposição.
+- [ ] Provisionar Ubuntu, Node 22.x, usuário limitado, diretórios isolados, Nginx, TLS e systemd.
+- [ ] Copiar somente o artefato aprovado e gerar `frontend-react/dist`; confirmar que Nginx entrega React em `/`, `/app.html` e `/admin.html`, sem servir o HTML legado no lugar.
+- [ ] Criar banco SQLite novo de staging, habilitar/verificar WAL e foreign keys conforme o comportamento real, sem copiar PII.
+- [ ] Criar `.env` com segredos exclusivos, `GATEWAY=demo`, SMTP/Google Vision/fontes oficiais desativados e `DEMO_NOVA_MULTA=false`.
+- [ ] Validar health check, reinício, permissões, journald, limite de upload e proxy sem cache de respostas privadas.
+- [ ] Executar backup WAL e restauração em cópia descartável; registrar integridade e permissões.
+- [ ] Confirmar que jobs internos rodam em uma única instância e não enviam e-mails, consultam fontes não autorizadas ou atingem produção.
+
+**Atualização VM-05.02:** modelos systemd/Nginx, scripts de verificação/instalação/backup/restauração e instruções de operação foram preparados em `infra/vps/`. Nenhuma VPS foi acessada ou provisionada; todos os testes Linux e operacionais permanecem pendentes.

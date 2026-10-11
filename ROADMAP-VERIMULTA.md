@@ -375,12 +375,13 @@ Princípios de evolução:
 
 ## Etapa 05 — Backend e banco em nuvem
 
-**Status:** VM-05.01 implementada documentalmente e validada localmente; VPS, homologação e migração de banco não iniciadas.
+**Status:** VM-05.01 e VM-05.02 preparadas documentalmente e validadas localmente; VPS, homologação e migração de banco não iniciadas.
 
 ### Checklist
 
 - [x] Preparar plano de infraestrutura VPS e checklist de homologação (VM-05.01).
 - [x] Planejar migração SQLite → PostgreSQL, índices, constraints, backup e rollback (VM-05.01).
+- [x] Preparar modelos de staging Linux, systemd, Nginx, verificação e backup/restauração (VM-05.02).
 - [ ] Definir ambiente de backend e banco gerenciado/adequado.
 - [ ] Validar isolamento de usuário/tenant em todas as consultas.
 - [ ] Configurar secrets fora do repositório.
@@ -391,10 +392,11 @@ Princípios de evolução:
 
 - O backend atual usa SQLite e módulos Node.js/Express no diretório `6_CODIGO_FONTE/sistema`.
 - `PLANO-INFRAESTRUTURA-VPS.md`, `PLANO-MIGRACAO-SQLITE-POSTGRES.md` e `CHECKLIST-HOMOLOGACAO-VPS.md` registram o diagnóstico e os critérios da VM-05.01.
+- `infra/vps/` contém modelos locais da VM-05.02; nenhum item representa provisionamento efetivo.
 
 ### Pendências
 
-- Provedor, volume, RPO/RTO, secrets de staging e rollback ainda precisam ser definidos antes da VM-05.02.
+- VPS autorizada, domínio, volume, RPO/RTO, secrets de staging e testes Linux ainda precisam ser definidos antes da VM-05.03.
 
 ### Critérios de aceite
 

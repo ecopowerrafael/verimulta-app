@@ -22,6 +22,8 @@ Status: preparação documental da VM-05.01. Nenhuma VPS foi acessada ou alterad
 5. Backups precisam ser criptografados, testados por restauração e mantidos fora da mesma VPS. Antes de produção: janela, retenção, RPO/RTO e procedimento de rollback aprovados.
 6. O serviço deve ter restart supervisionado (systemd ou equivalente), limite de memória/CPU, rotação de logs e monitoramento de `/v1/saude`.
 
+O backend considera produção somente quando `NODE_ENV === 'production'`. Em `NODE_ENV=staging`, a ativação direta de planos demo e outras condições protegidas exclusivamente por `PRODUCAO` continuam habilitadas. Por isso o staging deve ter contas, banco, webhook, gateway e domínio próprios, sem dados reais; isso não deve ser interpretado como uma configuração pronta para cobrança ou operação comercial.
+
 ## Segurança operacional
 
 - Configurar proxy confiável antes de aceitar `X-Forwarded-For`; o código usa o primeiro IP desse cabeçalho para rate limit.
@@ -40,4 +42,4 @@ O repositório não contém benchmark, volume de usuários, tamanho de uploads, 
 
 ## Bloqueios para homologação
 
-Domínio/TLS, provedor, sizing, supervisão, backup restaurável, credenciais de staging, SMTP de teste, webhook isolado, política de logs e evidência visual/HTTP ainda não foram definidos ou executados. A arquitetura acima é proposta, não homologação.
+Domínio/TLS, provedor, sizing, supervisão, backup restaurável, credenciais de staging, SMTP de teste, webhook isolado, política de logs e evidência visual/HTTP ainda não foram definidos ou executados. A arquitetura e os modelos em `infra/vps/` estão apenas preparados em código; nenhuma infraestrutura foi provisionada.

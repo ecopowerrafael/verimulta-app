@@ -1,0 +1,27 @@
+[Unit]
+Description=VeriMulta API - staging
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=verimulta-staging
+Group=verimulta-staging
+WorkingDirectory=/opt/verimulta-staging/6_CODIGO_FONTE/sistema
+EnvironmentFile=/etc/verimulta-staging/verimulta.env
+ExecStart=/usr/bin/node servidor.js
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=20s
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/verimulta-staging /var/log/verimulta-staging
+LimitNOFILE=4096
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
