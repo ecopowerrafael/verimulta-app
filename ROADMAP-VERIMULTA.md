@@ -134,7 +134,7 @@ Princípios de evolução:
 
 ## Etapa 04 — Conclusão do frontend React
 
-**Status:** em andamento; VM-04.01, VM-04.02 e VM-04.03 implementadas e testadas localmente. Integração real pendente.
+**Status:** em andamento; VM-04.01, VM-04.02, VM-04.03 e VM-04.03.1 implementadas e testadas localmente. Integração real pendente.
 
 ### Checklist
 
@@ -252,7 +252,7 @@ Princípios de evolução:
 - A seleção de nota sem comentário e comentário sem nota são suportados; envio só é confirmado após resposta de sucesso.
 - A barra global não foi adicionada às telas de autenticação/análise, conforme `TELAS_SEM_NAV` do legado.
 - `npm run typecheck`: passou.
-- `npm test`: 28 testes passaram.
+- `npm test`: 34 testes passaram.
 - `npm run build`: passou.
 - Ainda pendentes: homologação contra Express real, comparação visual, teclado/leitor de tela e botão voltar em navegador real.
 
@@ -261,6 +261,33 @@ Princípios de evolução:
 - Feedback não duplica envio enquanto a requisição está em andamento e não renderiza HTML não confiável.
 - Respostas de feedback de sessão antiga não alteram a sessão atual.
 - Transparência não cria promessas jurídicas ou resultados inexistentes.
+- VM-04.04 não iniciada.
+
+### VM-04.03.1 — Correção de feedback e navegação
+
+**Status:** implementada e testada localmente; homologação real pendente.
+
+#### Correções
+
+- [x] Campos de feedback só são limpos após confirmação explícita de sucesso do fluxo.
+- [x] Falhas HTTP, timeout e rede preservam nota e comentário.
+- [x] Falha ao atualizar o histórico após envio confirmado gera aviso separado, sem tratar o envio como falho.
+- [x] Envios duplicados são bloqueados durante a requisição e não há reenvio automático.
+- [x] `popstate` valida sessão, usuário atual e dados necessários para diagnóstico/defesa.
+- [x] Logout e expiração usam `replaceState` e removem o acesso visual às telas protegidas.
+- [x] Entradas duplicadas da mesma tela não são adicionadas ao histórico.
+
+#### Evidências
+
+- Fluxo explícito: `frontend-react/src/services/feedbackFlow.ts`.
+- Guarda de histórico: `frontend-react/src/services/navigationState.ts`.
+- Testes de sucesso/falha/histórico e navegação adicionados; 34 testes passaram.
+- Nenhum backend ou HTML legado foi alterado.
+
+#### Pendências
+
+- Confirmar essas jornadas contra Express real, sessão real e navegador real na VPS.
+- Validar recarregamento, botão voltar, foco e acessibilidade em todos os viewports.
 - VM-04.04 não iniciada.
 
 ---
@@ -503,7 +530,7 @@ Princípios de evolução:
 
 ## Próxima sequência recomendada
 
-Não iniciar a VM-04.03 automaticamente. Após a homologação das VMs 04.01 e 04.02 na VPS, a próxima sequência recomendada da Etapa 04 é:
+Não iniciar a VM-04.04 automaticamente. Após a homologação das VMs 04.01, 04.02, 04.03 e 04.03.1 na VPS, a próxima sequência recomendada da Etapa 04 é:
 
 1. concluir estados de erro, carregamento, vazio e paywall da jornada já migrada;
 2. migrar a tela de recursos/perfil com comparação visual formal e acessibilidade;

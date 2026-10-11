@@ -148,4 +148,17 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Validar teclado, foco, leitor de tela e viewports 320/360/390/430 px e desktop.
 - [ ] Comparar transparência com o HTML legado e confirmar que avisos legais não foram alterados.
 
-**Atualização VM-04.03:** feedback, transparência e navegação implementados localmente; 28 testes passaram, mas os cenários acima permanecem pendentes de homologação integrada e visual.
+**Atualização VM-04.03:** feedback, transparência e navegação implementados localmente; 34 testes passaram, mas os cenários acima permanecem pendentes de homologação integrada e visual.
+
+## VM-04.03.1 — repetir na VPS após a correção
+
+- [ ] Forçar erro HTTP/timeout/rede no envio e confirmar que nota e comentário permanecem preenchidos.
+- [ ] Confirmar que o formulário só limpa após sucesso real de `POST /v1/feedback`.
+- [ ] Fazer o POST retornar sucesso e interromper `GET /v1/feedback`; confirmar aviso separado e envio concluído.
+- [ ] Acionar envio repetidamente durante uma requisição e confirmar ausência de duplicidade.
+- [ ] Trocar de usuário ou expirar a sessão durante feedback e confirmar que a resposta antiga não atualiza a nova sessão.
+- [ ] Fazer logout e usar Voltar; confirmar que telas protegidas não são restauradas.
+- [ ] Recarregar em uma tela dependente de diagnóstico/defesa e confirmar fallback seguro sem dados de outro usuário.
+- [ ] Navegar repetidamente para a mesma tela e confirmar que o histórico não cresce com entradas duplicadas.
+
+**Atualização VM-04.03.1:** correções implementadas localmente; 34 testes passaram, mas os cenários acima permanecem pendentes de homologação real.

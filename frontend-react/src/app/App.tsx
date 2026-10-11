@@ -27,9 +27,11 @@ import { PartnerPage } from '../pages/parceiro/PartnerPage';
 import { webFileTransfer } from '../integrations/fileTransfer';
 import { webExternalNavigation } from '../integrations/externalNavigation';
 import { responseBelongsToSession } from '../services/sessionState';
-import { FeedbackPage } from '../pages/feedback/FeedbackPage';
+import { FeedbackPage, type FeedbackSubmitResult } from '../pages/feedback/FeedbackPage';
 import { TransparencyPage } from '../pages/transparencia/TransparencyPage';
 import { AppBottomNavigation } from '../components/AppBottomNavigation';
+import { canRestoreScreen, shouldPushScreen } from '../services/navigationState';
+import { submitFeedbackFlow } from '../services/feedbackFlow';
 
 export type Screen = 'login' | 'register' | 'home' | 'scan' | 'analysis' | 'confirm' | 'diagnosis' | 'resources' | 'defense' | 'plans' | 'profile' | 'vehicle' | 'cnh' | 'debts' | 'consultations' | 'active-debt' | 'fleet' | 'network' | 'partner' | 'feedback' | 'transparency';
 const SCREEN_VALUES = new Set<string>(['login', 'register', 'home', 'scan', 'analysis', 'confirm', 'diagnosis', 'resources', 'defense', 'plans', 'profile', 'vehicle', 'cnh', 'debts', 'consultations', 'active-debt', 'fleet', 'network', 'partner', 'feedback', 'transparency']);
@@ -61,14 +63,28 @@ export function App() {
   const sessionExpiredRef = useRef(false);
   const authOperationRef = useRef(0);
   const [screen, setScreenState] = useState<Screen>('login');
+  const screenRef = useRef<Screen>('login');
+  const modelRef = useRef<AppModel | null>(null);
   const [model, setModel] = useState<AppModel>(emptyModel);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [cancellationRequested, setCancellationRequested] = useState(false);
-  const setScreen = useCallback((next: Screen) => { window.history.pushState({ screen: next }, '', window.location.href); setScreenState(next); }, []);
+  useEffect(() => { screenRef.current = screen; }, [screen]);
+  useEffect(() => { modelRef.current = model; }, [model]);
+  const replaceScreen = useCallback((next: Screen) => { window.history.replaceState({ screen: next }, '', window.location.href); screenRef.current = next; setScreenState(next); }, []);
+  const setScreen = useCallback((next: Screen) => { if (!shouldPushScreen(screenRef.current, next, window.history.state?.screen)) return; window.history.pushState({ screen: next }, '', window.location.href); screenRef.current = next; setScreenState(next); }, []);
   useEffect(() => {
     window.history.replaceState({ screen: 'login' }, '', window.location.href);
-    const onPopState = (event: PopStateEvent) => setScreenState(isScreenValue(event.state?.screen) ? event.state.screen : 'home');
+    const onPopState = (event: PopStateEvent) => {
+      const next = isScreenValue(event.state?.screen) ? event.state.screen : 'home';
+      const session = webCredentialStorage.read();
+      const currentModel = modelRef.current;
+      const allowed = canRestoreScreen(next, { hasSession: Boolean(session), modelUserId: currentModel?.user?.id ?? null, sessionUserId: session?.usuario?.id ?? null, hasDiagnosis: Boolean(currentModel?.diagnosis), hasDefense: Boolean(currentModel?.defense) });
+      const safeScreen = allowed ? next : session && currentModel?.user ? 'home' : 'login';
+      if (!allowed) window.history.replaceState({ screen: safeScreen }, '', window.location.href);
+      screenRef.current = safeScreen;
+      setScreenState(safeScreen);
+    };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -76,9 +92,9 @@ export function App() {
     authOperationRef.current += 1;
     sessionExpiredRef.current = true;
     setModel(emptyModel());
-    setScreen('login');
+    replaceScreen('login');
     setToast('Sua sessão expirou. Entre novamente para continuar.');
-  }, []);
+  }, [replaceScreen]);
   const client = useMemo(() => new ApiClient({ baseUrl: (import.meta.env.VITE_API_URL as string | undefined) ?? '', storage: webCredentialStorage, onSessionInvalidated: invalidateSession }), [invalidateSession]);
   const api = useMemo(() => createVerimultaApi(client), [client]);
 
@@ -104,7 +120,7 @@ export function App() {
     setModel((old) => ({ ...old, vehicles, fines, selectedVehicleId: old.selectedVehicleId && vehicles.some((vehicle) => vehicle.id === old.selectedVehicleId) ? old.selectedVehicleId : null, vehicleSummary: old.selectedVehicleId && vehicles.some((vehicle) => vehicle.id === old.selectedVehicleId) ? old.vehicleSummary : null, pendingVehicle: resolvedPending ? null : pendingVehicle ?? old.pendingVehicle }));
     return true;
   };
-  const logout = () => { authOperationRef.current += 1; webCredentialStorage.clear(); setModel(emptyModel()); setScreen('login'); setCancellationRequested(false); };
+  const logout = () => { authOperationRef.current += 1; webCredentialStorage.clear(); setModel(emptyModel()); replaceScreen('login'); setCancellationRequested(false); };
 
   useEffect(() => {
     const session = webCredentialStorage.read();
@@ -186,22 +202,32 @@ export function App() {
     setModel((old) => ({ ...old, cnh }));
     notify(result.ok ? 'Validade salva.' : 'Não foi possível salvar.');
   });
-  const loadFeedback = async (expectedToken = currentSessionToken()) => {
-    if (!expectedToken) return;
+  const loadFeedback = async (expectedToken = currentSessionToken()): Promise<{ ok: true } | { ok: false; message: string }> => {
+    if (!expectedToken) return { ok: false, message: 'Sua sessão expirou.' };
     setModel((old) => ({ ...old, feedbackError: null }));
     let items: Feedback[];
-    try { items = await api.listFeedback(); } catch (error) { if (!isCurrentSession(expectedToken)) return; setModel((old) => ({ ...old, feedbackError: error instanceof Error ? error.message : 'Falha ao carregar o feedback.' })); throw error; }
-    if (!isCurrentSession(expectedToken)) return;
+    try { items = await api.listFeedback(); } catch (error) { const message = error instanceof Error ? error.message : 'Falha ao carregar o feedback.'; if (!isCurrentSession(expectedToken)) return { ok: false, message: 'A sessão mudou.' }; setModel((old) => ({ ...old, feedbackError: message })); return { ok: false, message }; }
+    if (!isCurrentSession(expectedToken)) return { ok: false, message: 'A sessão mudou.' };
     setModel((old) => ({ ...old, feedback: items }));
+    return { ok: true };
   };
-  const openFeedback = () => { setScreen('feedback'); void withBusy(() => loadFeedback()); };
-  const saveFeedback = (nota: number | null, texto: string) => withBusy(async () => {
+  const openFeedback = () => { setScreen('feedback'); void withBusy(async () => { await loadFeedback(); }); };
+  const saveFeedback = async (nota: number | null, texto: string): Promise<FeedbackSubmitResult> => {
+    if (busy) return { ok: false, message: 'Aguarde o envio atual terminar.' };
     const token = currentSessionToken();
-    await api.createFeedback({ tela: 't-feedback', nota, texto });
-    if (!isCurrentSession(token)) return;
-    await loadFeedback(token);
-    if (isCurrentSession(token)) notify('Obrigado! Feedback recebido.');
-  });
+    if (!token) return { ok: false, message: 'Sua sessão expirou. Entre novamente para enviar.' };
+    setBusy(true); sessionExpiredRef.current = false;
+    try {
+      let responseMessage = 'Obrigado! Feedback recebido.';
+      const flow = await submitFeedbackFlow(async () => { const response = await api.createFeedback({ tela: 't-feedback', nota, texto }); responseMessage = response.mensagem || responseMessage; if (!isCurrentSession(token)) throw new Error('A sessão mudou. Revise o feedback antes de enviar novamente.'); }, async () => { const history = await loadFeedback(token); if (!history.ok) throw new Error(history.message); });
+      if (sessionExpiredRef.current) return { ok: false, message: 'Sua sessão expirou. Entre novamente para enviar.' };
+      if (flow.ok && !flow.warning) notify(responseMessage);
+      return flow;
+    } catch (error) {
+      if (sessionExpiredRef.current && error instanceof ApiError && error.status === 401) return { ok: false, message: 'Sua sessão expirou. Entre novamente para enviar.' };
+      return { ok: false, message: error instanceof Error ? error.message : 'Não foi possível enviar o feedback.' };
+    } finally { setBusy(false); }
+  };
   const openResources = () => withBusy(async () => { const token = currentSessionToken(); const resources = await api.listResources(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, resources })); setScreen('resources'); });
 
   return <>
