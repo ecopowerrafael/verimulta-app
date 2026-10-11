@@ -61,6 +61,7 @@ export class AdminApi {
     const response = await this.fetcher(`${this.baseUrl}${path}`, {
       ...init,
       cache: 'no-store',
+      credentials: 'omit',
       headers: {
         ...(init.headers ?? {}),
         'x-admin-secret': this.secret,

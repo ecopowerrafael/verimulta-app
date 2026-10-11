@@ -17,6 +17,7 @@ describe('AdminApi', () => {
 
     expect(fetcher).toHaveBeenCalledWith('/v1/admin/resumo', expect.objectContaining({
       cache: 'no-store',
+      credentials: 'omit',
       headers: expect.objectContaining({ 'x-admin-secret': 'segredo-de-teste', Accept: 'application/json' }),
     }));
     expect(fetcher.mock.calls[0]?.[0]).not.toContain('segredo-de-teste');
@@ -52,5 +53,24 @@ describe('AdminApi', () => {
       ['/v1/admin/tarefas/prazos', 'POST'],
       ['/v1/admin/tarefas/varredura', 'POST'],
     ]);
+  });
+
+  it('preserva os campos reais das tabelas e aceita listas vazias', async () => {
+    const payload = {
+      usuarios: 0,
+      assinantes: 0,
+      mrr: 0,
+      multas: 0,
+      recursos: 0,
+      ultimos_usuarios: [],
+      pagamentos: [],
+      ultimas_multas: [],
+      emails: [],
+      varreduras: [],
+    };
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(response(payload));
+    const api = new AdminApi('segredo-de-teste', fetcher);
+
+    await expect(api.summary()).resolves.toEqual(payload);
   });
 });

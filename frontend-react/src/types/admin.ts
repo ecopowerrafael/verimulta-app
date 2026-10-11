@@ -59,7 +59,7 @@ export type AdminFeedback = {
 export type AdminFeedbackSummary = {
   total: number;
   nota_media: number | null;
-  por_tela: Record<string, number>;
+  por_tela: Array<[string, number]>;
   itens: AdminFeedback[];
 };
 

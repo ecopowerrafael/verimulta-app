@@ -11,8 +11,16 @@ const saoPaulo = new Intl.DateTimeFormat('pt-BR', {
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
-  const date = new Date(value);
+  const normalized = String(value).includes('T') ? String(value) : `${String(value).replace(' ', 'T')}Z`;
+  const date = new Date(normalized);
   return Number.isNaN(date.getTime()) ? value : saoPaulo.format(date);
+}
+
+function formatDay(value: string | null | undefined): string {
+  if (!value) return '—';
+  const normalized = String(value).includes('T') ? String(value) : `${String(value).replace(' ', 'T')}Z`;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo' }).format(date);
 }
 
 function formatMoney(value: number | string | null): string {
@@ -98,10 +106,13 @@ export function AdminApp() {
     setError(null);
     setMessage(null);
     try {
-      if (task === 'prazos') await api.runDeadlines();
-      else await api.runPlateScan();
+      const result = task === 'prazos' ? await api.runDeadlines() : await api.runPlateScan();
       await loadDashboard(api);
-      setMessage(task === 'prazos' ? 'Alertas de prazo executados com sucesso.' : 'Varredura executada com sucesso.');
+      if (task === 'prazos') {
+        setMessage(`Alertas de prazo executados com sucesso. Disparados: ${display(result.disparados)}.`);
+      } else {
+        setMessage(`Varredura executada com sucesso. Placas: ${display(result.placas_verificadas)} · Novas multas: ${display(result.novas_multas)}.`);
+      }
     } catch (cause) {
       setError(cause instanceof AdminAuthError ? cause.message : 'A tarefa não pôde ser concluída.');
     } finally {
@@ -114,8 +125,7 @@ export function AdminApp() {
       <main className="admin-shell admin-login-shell">
         <header className="admin-header">
           <div>
-            <p className="admin-kicker">VERIMULTA</p>
-            <h1>Painel do Dono</h1>
+            <div className="admin-brand"><span className="admin-brand-mark" aria-hidden="true">✓</span><h1>Painel Verimulta</h1></div>
           </div>
           <span className="admin-lock" aria-hidden="true">⌁</span>
         </header>
@@ -146,8 +156,7 @@ export function AdminApp() {
     <main className="admin-shell">
       <header className="admin-header">
         <div>
-          <p className="admin-kicker">VERIMULTA</p>
-          <h1>Painel do Dono</h1>
+          <div className="admin-brand"><span className="admin-brand-mark" aria-hidden="true">✓</span><h1>Painel Verimulta</h1></div>
           <p className="admin-subtitle">Dados administrativos retornados pelo backend.</p>
         </div>
         <button className="admin-secondary-button" type="button" onClick={handleLogout}>Sair</button>
@@ -166,26 +175,28 @@ export function AdminApp() {
             <Kpi label="Multas auditadas" value={summary.multas} />
             <Kpi label="Defesas geradas" value={summary.recursos} />
           </section>
-          <AdminTable title="Últimos usuários" headers={['Nome', 'E-mail', 'Plano', 'Desde']} rows={summary.ultimos_usuarios.map((item) => [display(item.nome), display(item.email), display(item.plano), formatDate(item.criado_em)])} />
-          <AdminTable title="Pagamentos" headers={['Evento', 'Plano', 'Valor', 'Status']} rows={summary.pagamentos.map((item) => [display(item.evento), display(item.plano), formatMoney(item.valor), display(item.status)])} />
-          <AdminTable title="Multas" headers={['AIT', 'Órgão', 'Valor', 'Origem']} rows={summary.ultimas_multas.map((item) => [display(item.ait), display(item.orgao), formatMoney(item.valor), display(item.origem)])} />
-          <AdminTable title="Emails e tarefas" headers={['Tipo', 'Para', 'Status']} rows={summary.emails.map((item) => [display(item.tipo), display(item.para), formatDate(item.enviado)])} />
-          <section className="admin-card admin-actions">
-            <h2>Tarefas operacionais</h2>
-            <p>As tarefas são manuais e não são executadas ao abrir o painel.</p>
-            <div className="admin-action-row">
-              <button type="button" onClick={() => void runTask('prazos')} disabled={Boolean(runningTask)}> {runningTask === 'prazos' ? 'Executando…' : 'Rodar alertas de prazo'} </button>
-              <button type="button" onClick={() => void runTask('varredura')} disabled={Boolean(runningTask)}> {runningTask === 'varredura' ? 'Executando…' : 'Varrer placas agora'} </button>
-            </div>
-          </section>
-          <AdminTable title="Varreduras" headers={['Varredura', 'Placas', 'Novas multas']} rows={summary.varreduras.map((item) => [formatDate(item.criado_em), display(item.placas_verificadas), display(item.novas_multas)])} />
+          <div className="admin-grid">
+            <AdminTable title="Últimos usuários" headers={['Nome', 'E-mail', 'Plano', 'Desde']} rows={summary.ultimos_usuarios.map((item) => [display(item.nome), display(item.email), display(item.plano), formatDay(item.criado_em)])} />
+            <AdminTable title="Movimentações de pagamento" headers={['Evento', 'Plano', 'Valor', 'Status']} rows={summary.pagamentos.map((item) => [display(item.evento), display(item.plano), formatMoney(item.valor), display(item.status)])} />
+            <AdminTable title="Últimas multas auditadas" headers={['AIT', 'Órgão', 'Valor', 'Origem']} rows={summary.ultimas_multas.map((item) => [display(item.ait), display(item.orgao), formatMoney(item.valor), display(item.origem)])} />
+            <AdminTable title="E-mails e tarefas" headers={['Tipo', 'Para', 'Status']} rows={summary.emails.map((item) => [display(item.tipo), display(item.para), item.enviado ? 'enviado' : 'log'])} />
+            <section className="admin-card admin-actions">
+              <h2>Tarefas operacionais</h2>
+              <p>As tarefas são manuais e não são executadas ao abrir o painel.</p>
+              <div className="admin-action-row">
+                <button type="button" onClick={() => void runTask('prazos')} disabled={Boolean(runningTask)}>▶ {runningTask === 'prazos' ? 'Executando…' : 'Rodar alertas de prazo'}</button>
+                <button type="button" onClick={() => void runTask('varredura')} disabled={Boolean(runningTask)}>📡 {runningTask === 'varredura' ? 'Executando…' : 'Varrer placas agora'}</button>
+              </div>
+              <AdminTable headers={['Varredura', 'Placas', 'Novas multas']} rows={summary.varreduras.map((item) => [`${formatDate(item.criado_em)} (${display(item.fonte)})`, display(item.placas_verificadas), display(item.novas_multas)])} />
+            </section>
+          </div>
         </>
       )}
 
       {feedback && (
         <section className="admin-card admin-feedback">
-          <div className="admin-section-heading"><div><h2>Feedback beta</h2><p>{feedback.total} registros · nota média {display(feedback.nota_media)}</p></div></div>
-          <AdminTable headers={['Quando', 'Quem', 'Tela', 'Nota', 'O que disse']} rows={feedback.itens.map((item) => [formatDate(item.criado_em), `${display(item.nome)} · ${display(item.email)}`, display(item.tela), display(item.nota), display(item.texto)])} />
+          <div className="admin-section-heading"><div><h2>Feedback do beta <span className="admin-feedback-summary">{feedback.total} relato(s) · nota média {display(feedback.nota_media)}{feedback.por_tela[0] ? ` · mais citada: ${feedback.por_tela[0][0]}` : ''}</span></h2></div></div>
+          <AdminTable headers={['Quando', 'Quem', 'Tela', 'Nota', 'O que disse']} rows={feedback.itens.map((item) => [formatDate(item.criado_em), display(item.nome), display(item.tela), item.nota === null ? '—' : `${item.nota}/5`, display(item.texto)])} />
         </section>
       )}
     </main>
