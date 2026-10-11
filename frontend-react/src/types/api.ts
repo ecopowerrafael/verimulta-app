@@ -62,6 +62,14 @@ export interface Multa {
   origem?: 'agente' | 'radar' | string;
 }
 
+export interface Feedback {
+  id: number;
+  tela: string;
+  nota: number | null;
+  texto: string | null;
+  criado_em: string;
+}
+
 export interface CamposMulta {
   ait?: string | null;
   orgao?: string | null;

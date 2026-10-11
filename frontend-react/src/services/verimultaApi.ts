@@ -1,5 +1,5 @@
 import { ApiClient } from './apiClient';
-import type { CamposMulta, CheckoutResposta, CnhResumo, DefesaCriada, Diagnostico, LeituraDocumento, Multa, Planos, Recurso, Sessao, Usuario, Veiculo, VeiculoResumo } from '../types/api';
+import type { CamposMulta, CheckoutResposta, CnhResumo, DefesaCriada, Diagnostico, Feedback, LeituraDocumento, Multa, Planos, Recurso, Sessao, Usuario, Veiculo, VeiculoResumo } from '../types/api';
 
 export const createVerimultaApi = (client: ApiClient) => ({
   login: (email: string, senha: string) => client.request<Sessao>('/v1/auth/login', { method: 'POST', json: { email, senha } }),
@@ -35,6 +35,8 @@ export const createVerimultaApi = (client: ApiClient) => ({
   cancelSubscription: () => client.request<{ ok: boolean; mensagem: string }>('/v1/assinaturas/cancelar', { method: 'POST', json: {} }),
   downloadPersonalData: () => client.request<Blob>('/v1/eu/dados', { binary: true }),
   deleteAccount: () => client.request<{ ok: boolean; mensagem: string }>('/v1/eu/conta', { method: 'DELETE' }),
+  listFeedback: () => client.request<Feedback[]>('/v1/feedback'),
+  createFeedback: (input: { tela: string; nota: number | null; texto: string }) => client.request<{ ok: boolean; id: number; mensagem: string }>('/v1/feedback', { method: 'POST', json: { tela: input.tela, ...(input.nota === null ? {} : { nota: input.nota }), texto: input.texto } }),
   userFromSession: (token: string): Usuario | null => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1])) as { id?: number; email?: string };

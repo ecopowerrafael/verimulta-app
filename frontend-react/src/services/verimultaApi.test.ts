@@ -89,4 +89,15 @@ describe('contratos da jornada de multa', () => {
     expect(client.calls.map((call) => call.path)).toEqual(['/v1/veiculos/12/resumo', '/v1/cnh', '/v1/cnh']);
     expect(client.calls[2].options.json).toEqual({ validade: '2030-04-05' });
   });
+
+  it('mantém feedback no contrato autenticado e limita a tela de origem ao payload', async () => {
+    const client = fakeClient(); const api = createVerimultaApi(client as never);
+    await api.listFeedback();
+    await api.createFeedback({ tela: 't-feedback', nota: 5, texto: 'Funcionou.' });
+    expect(client.calls.map((call) => call.path)).toEqual(['/v1/feedback', '/v1/feedback']);
+    expect(client.calls[1].options.method).toBe('POST');
+    expect(client.calls[1].options.json).toEqual({ tela: 't-feedback', nota: 5, texto: 'Funcionou.' });
+    await api.createFeedback({ tela: 't-feedback', nota: null, texto: 'Somente comentário.' });
+    expect(client.calls[2].options.json).toEqual({ tela: 't-feedback', texto: 'Somente comentário.' });
+  });
 });

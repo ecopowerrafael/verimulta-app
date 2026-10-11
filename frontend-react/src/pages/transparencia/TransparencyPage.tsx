@@ -1,0 +1,6 @@
+import { Card } from '../../components/Card';
+import { PageHeader } from '../../components/PageHeader';
+
+export function TransparencyPage({ onBack }: { onBack: () => void }) {
+  return <section className="screen"><PageHeader title="Transparência total" subtitle="Como funcionamos" onBack={onBack} /><div className="content"><Card><h2>O que fazemos</h2><p className="muted">Organizamos seus documentos, auditamos a autuação com 14 verificações legais e apontamos as possibilidades com uma probabilidade estimada — antes de você gastar qualquer valor.</p></Card><Card><h2>O que nunca fazemos</h2><p className="muted">Não garantimos cancelamento, não prometemos resultado e não substituímos advogado no Judiciário. A defesa é protocolada por você, em seu nome, no âmbito administrativo.</p></Card><Card><h2>Seus dados</h2><p className="muted">Tratamento com base no seu consentimento (LGPD), finalidades específicas, biometria opcional e exclusão quando você quiser.</p></Card><Card className="notice"><h2>Consultas externas</h2><p>Licenciamento, IPVA, recall, dívida ativa e pontuação oficial dependem de fontes governamentais e credenciamento. Enquanto essas integrações não estiverem disponíveis, o aplicativo não apresenta esses dados como consultados.</p></Card></div></section>;
+}

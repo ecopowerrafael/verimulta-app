@@ -136,3 +136,16 @@ Checklist cumulativo. Itens não marcados não foram considerados aprovados.
 - [ ] Validar navegação, foco, teclado e leitura das mensagens nos viewports 320/360/390/430 px e desktop.
 
 **Atualização VM-04.02:** correções e quatro telas implementadas localmente; 23 testes passaram, mas os cenários acima permanecem pendentes de homologação integrada e comparação visual.
+
+## VM-04.03 — repetir na VPS após a migração
+
+- [ ] Enviar feedback somente com nota válida, comentário dentro de 4000 caracteres ou ambos.
+- [ ] Confirmar `POST /v1/feedback` com nota e com comentário sem nota; não enviar `nota: null`.
+- [ ] Confirmar que `GET /v1/feedback` retorna somente os feedbacks do usuário autenticado.
+- [ ] Confirmar que duplo clique não gera envios duplicados enquanto a requisição está em andamento.
+- [ ] Trocar de usuário durante carregamento/envio e confirmar que a resposta antiga não atualiza a sessão nova.
+- [ ] Validar navegação inferior, indicação ativa, botões de voltar e histórico do navegador.
+- [ ] Validar teclado, foco, leitor de tela e viewports 320/360/390/430 px e desktop.
+- [ ] Comparar transparência com o HTML legado e confirmar que avisos legais não foram alterados.
+
+**Atualização VM-04.03:** feedback, transparência e navegação implementados localmente; 28 testes passaram, mas os cenários acima permanecem pendentes de homologação integrada e visual.

@@ -3,7 +3,7 @@ import { ApiClient } from '../services/apiClient';
 import { createVerimultaApi } from '../services/verimultaApi';
 import { pendingVehicleStorage, webCredentialStorage } from '../services/storage';
 import { ApiError } from '../types/api';
-import type { CamposMulta, Diagnostico, DefesaCriada, Multa, Planos, Recurso, Usuario, Veiculo, VeiculoPendente } from '../types/api';
+import type { CamposMulta, Diagnostico, DefesaCriada, Feedback, Multa, Planos, Recurso, Usuario, Veiculo, VeiculoPendente } from '../types/api';
 import { Toast } from '../components/Toast';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
@@ -27,8 +27,13 @@ import { PartnerPage } from '../pages/parceiro/PartnerPage';
 import { webFileTransfer } from '../integrations/fileTransfer';
 import { webExternalNavigation } from '../integrations/externalNavigation';
 import { responseBelongsToSession } from '../services/sessionState';
+import { FeedbackPage } from '../pages/feedback/FeedbackPage';
+import { TransparencyPage } from '../pages/transparencia/TransparencyPage';
+import { AppBottomNavigation } from '../components/AppBottomNavigation';
 
-export type Screen = 'login' | 'register' | 'home' | 'scan' | 'analysis' | 'confirm' | 'diagnosis' | 'resources' | 'defense' | 'plans' | 'profile' | 'vehicle' | 'cnh' | 'debts' | 'consultations' | 'active-debt' | 'fleet' | 'network' | 'partner';
+export type Screen = 'login' | 'register' | 'home' | 'scan' | 'analysis' | 'confirm' | 'diagnosis' | 'resources' | 'defense' | 'plans' | 'profile' | 'vehicle' | 'cnh' | 'debts' | 'consultations' | 'active-debt' | 'fleet' | 'network' | 'partner' | 'feedback' | 'transparency';
+const SCREEN_VALUES = new Set<string>(['login', 'register', 'home', 'scan', 'analysis', 'confirm', 'diagnosis', 'resources', 'defense', 'plans', 'profile', 'vehicle', 'cnh', 'debts', 'consultations', 'active-debt', 'fleet', 'network', 'partner', 'feedback', 'transparency']);
+const isScreenValue = (value: unknown): value is Screen => typeof value === 'string' && SCREEN_VALUES.has(value);
 
 export interface AppModel {
   user: Usuario | null;
@@ -46,18 +51,27 @@ export interface AppModel {
   cnh: import('../types/api').CnhResumo | null;
   vehicleError: string | null;
   cnhError: string | null;
+  feedback: Feedback[] | null;
+  feedbackError: string | null;
 }
 
-const emptyModel = (): AppModel => ({ user: null, vehicles: [], fines: [], fields: {}, diagnosis: null, selectedFineId: null, resources: [], defense: null, plans: null, pendingVehicle: null, selectedVehicleId: null, vehicleSummary: null, cnh: null, vehicleError: null, cnhError: null });
+const emptyModel = (): AppModel => ({ user: null, vehicles: [], fines: [], fields: {}, diagnosis: null, selectedFineId: null, resources: [], defense: null, plans: null, pendingVehicle: null, selectedVehicleId: null, vehicleSummary: null, cnh: null, vehicleError: null, cnhError: null, feedback: null, feedbackError: null });
 
 export function App() {
   const sessionExpiredRef = useRef(false);
   const authOperationRef = useRef(0);
-  const [screen, setScreen] = useState<Screen>('login');
+  const [screen, setScreenState] = useState<Screen>('login');
   const [model, setModel] = useState<AppModel>(emptyModel);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [cancellationRequested, setCancellationRequested] = useState(false);
+  const setScreen = useCallback((next: Screen) => { window.history.pushState({ screen: next }, '', window.location.href); setScreenState(next); }, []);
+  useEffect(() => {
+    window.history.replaceState({ screen: 'login' }, '', window.location.href);
+    const onPopState = (event: PopStateEvent) => setScreenState(isScreenValue(event.state?.screen) ? event.state.screen : 'home');
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
   const invalidateSession = useCallback(() => {
     authOperationRef.current += 1;
     sessionExpiredRef.current = true;
@@ -172,20 +186,37 @@ export function App() {
     setModel((old) => ({ ...old, cnh }));
     notify(result.ok ? 'Validade salva.' : 'Não foi possível salvar.');
   });
+  const loadFeedback = async (expectedToken = currentSessionToken()) => {
+    if (!expectedToken) return;
+    setModel((old) => ({ ...old, feedbackError: null }));
+    let items: Feedback[];
+    try { items = await api.listFeedback(); } catch (error) { if (!isCurrentSession(expectedToken)) return; setModel((old) => ({ ...old, feedbackError: error instanceof Error ? error.message : 'Falha ao carregar o feedback.' })); throw error; }
+    if (!isCurrentSession(expectedToken)) return;
+    setModel((old) => ({ ...old, feedback: items }));
+  };
+  const openFeedback = () => { setScreen('feedback'); void withBusy(() => loadFeedback()); };
+  const saveFeedback = (nota: number | null, texto: string) => withBusy(async () => {
+    const token = currentSessionToken();
+    await api.createFeedback({ tela: 't-feedback', nota, texto });
+    if (!isCurrentSession(token)) return;
+    await loadFeedback(token);
+    if (isCurrentSession(token)) notify('Obrigado! Feedback recebido.');
+  });
+  const openResources = () => withBusy(async () => { const token = currentSessionToken(); const resources = await api.listResources(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, resources })); setScreen('resources'); });
 
   return <>
     <main className="phone-shell">
       {screen === 'login' && <LoginPage busy={busy} onRegister={() => setScreen('register')} onSubmit={login} />}
       {screen === 'register' && <RegisterPage busy={busy} onBack={() => setScreen('login')} onSubmit={register} />}
-      {screen === 'home' && model.user && <HomePage user={model.user} vehicles={model.vehicles} fines={model.fines} selectedVehicleId={model.selectedVehicleId} pendingVehicle={model.pendingVehicle} busy={busy} onRetryVehicle={retryPendingVehicle} onScan={() => setScreen('scan')} onLogout={logout} onResources={() => withBusy(async () => { const token = currentSessionToken(); const resources = await api.listResources(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, resources })); setScreen('resources'); })} onVehicle={openVehicle} onCnh={openCnh} onDebts={() => setScreen('debts')} onActiveDebt={() => setScreen('active-debt')} onFleet={() => setScreen('fleet')} onNetwork={() => setScreen('network')} onConsultations={() => setScreen('consultations')} onPlans={() => setScreen('plans')} onProfile={() => setScreen('profile')} onDiagnosis={(id) => withBusy(async () => { const token = currentSessionToken(); const result = await api.diagnosis(id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, selectedFineId: id, diagnosis: result })); setScreen('diagnosis'); })} />}
+      {screen === 'home' && model.user && <HomePage user={model.user} vehicles={model.vehicles} fines={model.fines} selectedVehicleId={model.selectedVehicleId} pendingVehicle={model.pendingVehicle} busy={busy} onRetryVehicle={retryPendingVehicle} onScan={() => setScreen('scan')} onLogout={logout} onResources={openResources} onVehicle={openVehicle} onCnh={openCnh} onDebts={() => setScreen('debts')} onActiveDebt={() => setScreen('active-debt')} onFleet={() => setScreen('fleet')} onNetwork={() => setScreen('network')} onConsultations={() => setScreen('consultations')} onPlans={() => setScreen('plans')} onProfile={() => setScreen('profile')} onDiagnosis={(id) => withBusy(async () => { const token = currentSessionToken(); const result = await api.diagnosis(id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, selectedFineId: id, diagnosis: result })); setScreen('diagnosis'); })} />}
       {screen === 'scan' && <ScanPage busy={busy} onBack={() => setScreen('home')} onManual={() => { setModel((old) => ({ ...old, fields: { origem: 'agente' } })); setScreen('confirm'); }} onFile={(file) => withBusy(async () => { const token = currentSessionToken(); setScreen('analysis'); const result = await api.readDocument(file); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, fields: result.campos })); setScreen('confirm'); if (!result.leu) notify(result.motivo ?? result.orientacao); })} />}
       {screen === 'analysis' && <AnalysisPage />}
       {screen === 'confirm' && <ConfirmPage busy={busy} initialFields={model.fields} onBack={() => setScreen('scan')} onSubmit={(fields) => withBusy(async () => { const token = currentSessionToken(); const result = await api.createFine(fields, model.selectedVehicleId ?? undefined); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, fields, selectedFineId: result.multa_id })); const diagnosis = await api.diagnosis(result.multa_id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, diagnosis })); setScreen('diagnosis'); })} />}
       {screen === 'diagnosis' && model.diagnosis && <DiagnosisPage diagnosis={model.diagnosis} onBack={() => setScreen('home')} onPlans={() => setScreen('plans')} onDefense={() => withBusy(async () => { if (!model.selectedFineId) return; const token = currentSessionToken(); const defense = await api.createDefense(model.selectedFineId); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, defense })); setScreen('defense'); })} />}
-      {screen === 'resources' && <ResourcesPage resources={model.resources} busy={busy} onBack={() => setScreen('home')} onRefresh={() => withBusy(async () => { const token = currentSessionToken(); const resources = await api.listResources(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, resources })); })} onOpenExisting={(resource) => withBusy(async () => { const token = currentSessionToken(); const blob = await api.downloadDefensePdf(resource.id); if (!isCurrentSession(token)) return; webFileTransfer.download(blob, `defesa-previa-recurso-${resource.id}.pdf`); notify('Defesa existente aberta em PDF.'); })} />}
+      {screen === 'resources' && <ResourcesPage resources={model.resources} busy={busy} onBack={() => setScreen('home')} onRefresh={openResources} onOpenExisting={(resource) => withBusy(async () => { const token = currentSessionToken(); const blob = await api.downloadDefensePdf(resource.id); if (!isCurrentSession(token)) return; webFileTransfer.download(blob, `defesa-previa-recurso-${resource.id}.pdf`); notify('Defesa existente aberta em PDF.'); })} />}
       {screen === 'defense' && model.defense && <DefensePage defense={model.defense} busy={busy} onBack={() => setScreen('resources')} onDownload={() => withBusy(async () => { const token = currentSessionToken(); const blob = await api.downloadDefensePdf(model.defense!.recurso_id); if (!isCurrentSession(token)) return; webFileTransfer.download(blob, 'defesa-previa-verimulta.pdf'); })} />}
       {screen === 'plans' && <PlansPage plans={model.plans} busy={busy} onBack={() => setScreen('home')} onLoad={() => withBusy(async () => { const token = currentSessionToken(); const plans = await api.listPlans(); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, plans })); })} onCheckout={(key) => withBusy(async () => { const token = currentSessionToken(); const result = await api.checkout(key); if (!isCurrentSession(token)) return; if (result.checkout_url) webExternalNavigation.open(result.checkout_url); else notify(result.aviso ?? 'Checkout criado. A ativação depende do pagamento confirmado pelo backend.'); })} />}
-      {screen === 'profile' && model.user && <ProfilePage user={model.user} busy={busy} cancellationRequested={cancellationRequested} onBack={() => setScreen('home')} onPlans={() => setScreen('plans')} onCancel={() => withBusy(async () => { const token = currentSessionToken(); const result = await api.cancelSubscription(); if (!isCurrentSession(token)) return; setCancellationRequested(true); notify(result.mensagem); })} onDownloadData={() => withBusy(async () => { const token = currentSessionToken(); const blob = await api.downloadPersonalData(); if (!isCurrentSession(token)) return; webFileTransfer.download(blob, 'meus-dados-verimulta.json'); })} onDeleteAccount={() => withBusy(async () => { const token = currentSessionToken(); const result = await api.deleteAccount(); if (!isCurrentSession(token)) return; notify(result.mensagem); logout(); })} onLogout={logout} />}
+      {screen === 'profile' && model.user && <ProfilePage user={model.user} busy={busy} cancellationRequested={cancellationRequested} onBack={() => setScreen('home')} onPlans={() => setScreen('plans')} onConsultations={() => setScreen('consultations')} onFeedback={openFeedback} onTransparency={() => setScreen('transparency')} onCancel={() => withBusy(async () => { const token = currentSessionToken(); const result = await api.cancelSubscription(); if (!isCurrentSession(token)) return; setCancellationRequested(true); notify(result.mensagem); })} onDownloadData={() => withBusy(async () => { const token = currentSessionToken(); const blob = await api.downloadPersonalData(); if (!isCurrentSession(token)) return; webFileTransfer.download(blob, 'meus-dados-verimulta.json'); })} onDeleteAccount={() => withBusy(async () => { const token = currentSessionToken(); const result = await api.deleteAccount(); if (!isCurrentSession(token)) return; notify(result.mensagem); logout(); })} onLogout={logout} />}
       {screen === 'vehicle' && <VehiclePage vehicles={model.vehicles} selectedVehicleId={model.selectedVehicleId} summary={model.vehicleSummary} error={model.vehicleError} busy={busy} onBack={() => setScreen('home')} onSelectVehicle={selectVehicle} onScan={() => setScreen('scan')} />}
       {screen === 'cnh' && <CnhPage data={model.cnh} error={model.cnhError} busy={busy} onBack={() => setScreen('home')} onRetry={openCnh} onSave={saveCnh} />}
       {screen === 'debts' && <DebtsPage fines={model.fines} busy={busy} onBack={() => setScreen('home')} onDiagnosis={(id) => withBusy(async () => { const token = currentSessionToken(); const result = await api.diagnosis(id); if (!isCurrentSession(token)) return; setModel((old) => ({ ...old, selectedFineId: id, diagnosis: result })); setScreen('diagnosis'); })} />}
@@ -194,6 +225,9 @@ export function App() {
       {screen === 'fleet' && <FleetPage onBack={() => setScreen('home')} onPlans={() => setScreen('plans')} />}
       {screen === 'network' && <NetworkPage onBack={() => setScreen('home')} onPartner={() => setScreen('partner')} />}
       {screen === 'partner' && <PartnerPage onBack={() => setScreen('network')} />}
+      {screen === 'feedback' && <FeedbackPage items={model.feedback} busy={busy} error={model.feedbackError} onBack={() => setScreen('profile')} onRetry={openFeedback} onSubmit={saveFeedback} />}
+      {screen === 'transparency' && <TransparencyPage onBack={() => setScreen('profile')} />}
+      {model.user && !['login', 'register', 'analysis'].includes(screen) && <AppBottomNavigation screen={screen} onHome={() => setScreen('home')} onResources={openResources} onScan={() => setScreen('scan')} onNetwork={() => setScreen('network')} onProfile={() => setScreen('profile')} />}
     </main>
     <Toast message={toast} />
   </>;

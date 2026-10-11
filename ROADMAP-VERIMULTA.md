@@ -134,7 +134,7 @@ Princípios de evolução:
 
 ## Etapa 04 — Conclusão do frontend React
 
-**Status:** em andamento; VM-04.01 e VM-04.02 implementadas e testadas localmente. Integração real pendente.
+**Status:** em andamento; VM-04.01, VM-04.02 e VM-04.03 implementadas e testadas localmente. Integração real pendente.
 
 ### Checklist
 
@@ -229,7 +229,39 @@ Princípios de evolução:
 - Quatro telas acessíveis sem alterar HTML legado ou backend.
 - Funcionalidades demonstrativas identificadas de forma explícita.
 - Nenhum dado pessoal coletado sem destino funcional.
-- VM-04.03 não iniciada.
+- VM-04.04 não iniciada.
+
+### VM-04.03 — Feedback, transparência e navegação
+
+**Status:** implementada e testada localmente; integração real e comparação visual na VPS pendentes.
+
+#### Checklist
+
+- [x] Migrar `t-feedback` com nota, comentário, validações, envio e histórico do próprio usuário.
+- [x] Integrar `GET /v1/feedback` e `POST /v1/feedback` sem enviar `nota: null` ao backend.
+- [x] Migrar `t-transparencia` preservando os textos e avisos legais do HTML legado.
+- [x] Criar barra inferior global para Início, Recursos, Verificar, Rede e Perfil.
+- [x] Indicar a seção ativa e preservar navegação por botão voltar e histórico do navegador.
+- [x] Corrigir preços demonstrativos da frota conforme `planos.js` e remover nomes fictícios da rede.
+- [x] Cobrir contratos, validações, navegação e isolamento de sessão com testes leves.
+
+#### Evidências e pendências
+
+- Componentes: `frontend-react/src/pages/feedback/FeedbackPage.tsx`, `transparencia/TransparencyPage.tsx` e `components/AppBottomNavigation.tsx`.
+- O backend limita comentário a 4000 caracteres, nota a 1–5 e lista somente feedbacks do usuário autenticado.
+- A seleção de nota sem comentário e comentário sem nota são suportados; envio só é confirmado após resposta de sucesso.
+- A barra global não foi adicionada às telas de autenticação/análise, conforme `TELAS_SEM_NAV` do legado.
+- `npm run typecheck`: passou.
+- `npm test`: 28 testes passaram.
+- `npm run build`: passou.
+- Ainda pendentes: homologação contra Express real, comparação visual, teclado/leitor de tela e botão voltar em navegador real.
+
+#### Critérios de aceite
+
+- Feedback não duplica envio enquanto a requisição está em andamento e não renderiza HTML não confiável.
+- Respostas de feedback de sessão antiga não alteram a sessão atual.
+- Transparência não cria promessas jurídicas ou resultados inexistentes.
+- VM-04.04 não iniciada.
 
 ---
 
