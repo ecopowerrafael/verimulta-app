@@ -265,4 +265,5 @@ O objetivo é concluir correções pequenas, confiáveis e revisáveis antes de 
 - `npm run build`: passou; bundle Vite gerado sem erros.
 - Backend real, banco SQLite, Docker, Capacitor e testes nativos não foram executados.
 - A Etapa 03 permanece aberta até a homologação HTTP na VPS e a definição do contrato de assinatura/identidade.
-- Commit local desta etapa e push devem ser registrados após a revisão final do diff.
+- Commit da implementação: `beaa5e53e63b8f6351ddaed2f94a819c819b7ead`.
+- Push confirmado em `meu-github/migration-react-typescript-capacitor`.
